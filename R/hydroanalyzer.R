@@ -34,12 +34,18 @@
 #'  abcd.year.model, abcd.month.model, abcd.mod.year.model, abcd.mod.month.model
 #'
 #' @section water budget funtions:
-#' This sections includes functions related to the water budget models.
+#' This section includes functions related to the water budget models.
 #'
 #' The function in this section are:
 #'
 #' water_budget_direct
 #'
+#' @section consistency functions:
+#' This section includes function used to check the consistency of hydrological time series.
+#'
+#' The functions included here are:
+#'
+#' double_mass_curve
 #' @docType package
 #' @name hydroanalyzer
 NULL

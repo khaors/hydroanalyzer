@@ -103,6 +103,6 @@ evt_thornthwaite <- function(Temp){
   I_month <- (Temp/5)**1.514
   I_year <- sum(I_month)
   alpha <-  6.75e-7*I_year**3-7.71e-5*I_year**2+0.0179*I_year+0.49
-  evt <- 1.6*(10*Temp/I_year)**alpha
+  evt <- 16*(10*Temp/I_year)**alpha
   return(evt)
 }

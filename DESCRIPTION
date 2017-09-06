@@ -1,13 +1,13 @@
 Package: hydroanalyzer
 Type: Package
-Title: What the Package Does (Title Case)
+Title: R package to analyze hydrological information
 Version: 0.1.0
-Author: Oscar Garcia-Cabrejo
+Author: Oscar Garcia-Cabrejo <khaors@gmail.com>
 Maintainer: Oscar Garcia-Cabrejo <khaors@gmail.com>
 Description: More about what it does (maybe more than one line)
     Use four spaces when indenting paragraphs within the Description.
 License: GPL
-Imports:  shiny, pracma, GenSA, GA, ggplot2, gridExtra, lubridate, moments
+Imports:  shiny, pracma, GenSA, GA, ggplot2, gridExtra, lubridate, moments, lmom
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.0.1
