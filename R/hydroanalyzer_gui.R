@@ -9,7 +9,7 @@
 hydroanalyzer_gui <- function() {
   appDir <- system.file("Shiny", "hydroanalyzer", package = "hydroanalyzer")
   if (appDir == "") {
-    stop("Could not find example directory. Try re-installing `pumpingtest`.", call. = FALSE)
+    stop("Could not find example directory. Try re-installing `hydroanalizer`.", call. = FALSE)
   }
   shiny::runApp(appDir, display.mode = "normal")
 }
