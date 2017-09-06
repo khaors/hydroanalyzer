@@ -1,0 +1,13 @@
+Package: hydroanalyzer
+Type: Package
+Title: What the Package Does (Title Case)
+Version: 0.1.0
+Author: Oscar Garcia-Cabrejo
+Maintainer: Oscar Garcia-Cabrejo <khaors@gmail.com>
+Description: More about what it does (maybe more than one line)
+    Use four spaces when indenting paragraphs within the Description.
+License: GPL
+Imports:  shiny, pracma, GenSA, GA, ggplot2, gridExtra, lubridate, moments
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 6.0.1

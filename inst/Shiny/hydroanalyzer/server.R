@@ -1,0 +1,699 @@
+#
+# This is the server logic of a Shiny web application. You can run the
+# application by clicking 'Run App' above.
+#
+# Find out more about building applications with Shiny here:
+#
+#    http://shiny.rstudio.com/
+#
+library(shiny)
+library(ggplot2)
+library(gridExtra)
+library(lubridate)
+library(moments)
+library(hydroanalyzer)
+#
+# Define Global Variables
+#
+options(shiny.maxRequestSize=30*1024^2)
+#
+model.types <- c("None", "normal", "lognormal", "exponential", "gumbel", "weibull",
+                  "gev", "pearson3", "logpearson3", "uniform")
+
+
+# Define server logic required to draw a histogram
+shinyServer(function(input, output, session) {
+  ## Server variables
+  server.env <- environment() # used to allocate in functions
+  current.table <- NULL
+  start.date <- NULL
+  start.date.vec <- NULL
+  current.ts <- NULL # this variable will contain the current time series
+  current.sp <- NULL # This variable will contain the current spatial info
+  current.varnames <- NULL
+  cfreq <- NULL
+  first <- TRUE
+  water.budget.mt <- NULL
+  # Output the uptc logo :
+  output$uptc.logo <- renderImage(list(src="uptc_jpg.jpg"),
+                                  deleteFile=FALSE)
+  ## Panel 'Import data'
+  dInput <- reactive({
+    in.file <- input$file1
+    if (is.null(in.file))
+      return(NULL)
+
+    the.sep <- switch(input$sep, "Comma"=",", "Semicolon"=";", "Tab"="\t",
+                      "Space"="")
+    the.quote <- switch(input$quote, "None"="","Double Quote"='"',
+                        "Single Quote"="'")
+    the.dec <- switch(input$dec, "Period"=".", "Comma"=",")
+    if (input$rownames) {
+      the.table <- read.table(in.file$datapath, header=input$header,
+                              sep=the.sep, quote=the.quote, row.names=1,
+                              dec=the.dec)
+    } else {
+      the.table <- read.table(in.file$datapath, header=input$header,
+                              sep=the.sep, quote=the.quote, dec=the.dec)
+    }
+    if(!first){
+      # Reset EDA tab
+      varnames <- c("None", names(the.table))
+      updateSelectInput(session, inputId = "EDAvarnames1", choices = varnames,
+                        selected = "None")
+      # Reset consistency tab
+      updateSelectInput(session, inputId = "consisttype", selected = "None")
+      # Reset water budget tab
+      updateSelectInput(session, inputId = "Budget.prec", choices = varnames,
+                        selected = "None")
+      updateSelectInput(session, inputId = "Budget.evtcol", choices = varnames,
+                        selected = "None")
+      updateSelectInput(session, inputId = "budgetmethod", selected = "None")
+      output$view.budget <- renderTable({ NULL })
+      # Reset baseflow tab
+      updateSelectInput(session, inputId = "BFvarnames1", choices = varnames,
+                        selected = "None")
+      updateSelectInput(session, inputId = "time.base", selected = "day")
+      updateSelectInput(session, inputId = "method", selected = "None")
+    }
+    if(first)
+      first <- FALSE
+    server.env$first <- first
+    # return the table
+    nvar <- ncol(the.table)
+    ndat <- nrow(the.table)
+    server.env$current.table <- the.table
+    server.env$current.varnames <- names(the.table)
+    #print(input$time.start)
+    #print(class(input$time.start))
+    #start.date.vec <- as.numeric(unlist(strsplit(input$time.start,",")))
+    #print(start.date.vec)
+    #server.env$start.date <- as.Date(paste0(start.date.vec[1],"/",start.date.vec[2],"/","01"))
+    #server.env$start.date.vec <- start.date.vec
+    #print(start.date)
+    #the.table1 <- subset(the.table, select = -t)
+    #freq <- input$time.freq
+    #server.env$cfreq <- switch(freq, years = 0, months = 12, days = 365, hours = 0)
+    the.table
+  })
+  # data preview table
+  output$view <- renderTable({
+    d.input <- dInput()
+    if (is.null(d.input))
+      return(NULL)
+    if (ncol(d.input)>input$ncol.preview)
+      d.input <- d.input[,1:input$ncol.preview]
+    #print("TABLE")
+    head(d.input, n=input$nrow.preview)
+  })
+  #######################################################################################
+  #                                  EDA Tab
+  #######################################################################################
+  output$EDAvarnames <- renderUI({
+    if(!is.null(server.env$current.table)){
+      current.names <-  c("None", server.env$current.varnames)
+      selectInput(inputId= "EDAvarnames1", label = "Current Variable",
+                  choices = current.names)
+    }
+  })
+  #
+  output$EDA.plot <- renderPlot({
+    current.table <- server.env$current.table
+    current.var <- input$EDAvarnames1
+    if(is.null(current.table))
+      return(NULL)
+    if(is.null(current.var) || current.var == "None")
+      return(NULL)
+    # Read input parameters
+    nd <- nrow(current.table)
+    nbins <- as.numeric(input$EDAnbins)
+    log.hist <- input$EDAloghist
+    max.lag <- as.numeric(input$EDAmaxlag)
+    if(max.lag >= nd){
+      max.lag <- round(nd/2)
+    }
+    span.filter <-  as.numeric(unlist(strsplit(input$EDAfilter,",")))
+    v.taper <- as.numeric(input$EDAtaper)
+    log.spec <- input$EDAlogspec
+    # Create data.frame with timeseries
+    #tt <- seq(server.env$start.date, by = input$time.freq, length.out = nd)
+    tt <- seq(1, nd, 1)
+    #data.df <- current.table
+    #print(current.var)
+    #print(current.table[current.var])
+    V <- as.matrix(unname(current.table[current.var]))
+    data.df <- data.frame(t = tt, V = V)
+    #cfreq <- server.env$cfreq
+    #start.date.vec <- server.env$start.date.vec
+    # if(cfreq != 0){
+    #   current.ts <- ts(V, start = start.date.vec,
+    #                               frequency = cfreq)
+    # }
+    # else{
+    #   current.ts <- ts(V, start = start.date)
+    # }
+    current.ts <- ts(V)
+    fn <- frequency(current.ts)
+    # Calculate the autocorrelation function
+    data.acf <- acf(current.ts, lag.max = max.lag, plot = F)
+    data.acf.df <- data.frame(lag = data.acf$lag, ymax = data.acf$acf,
+                                ymin = matrix(0,max.lag+1))
+    #print(data.acf.df)
+    # Calculate the spectral density
+    current_spectrum <- spec.pgram(current.ts, spans = span.filter, taper = v.taper,
+                                   detrend = T, plot = F)
+    spectrum.df <- data.frame(freq = current_spectrum$freq/fn, spec = current_spectrum$spec)
+    #
+    # Create time series plot
+    #
+    tsbase <- ggplot(data = data.df) + geom_line(aes(x = t, y = V), color = "#0066CC") +
+              xlab("Date") + ylab("Variable") + ggtitle("a) Time Series")
+    #
+    # Create histogram
+    #
+    pbaseh <- ggplot(data = data.df, aes(x = V)) + geom_histogram(aes(y = ..density..),
+                                                                colour="black",
+                                                                fill="white",
+                                                                bins = nbins) +
+      geom_density(alpha=0.2, fill = "#FF6666") +
+      geom_vline(aes(xintercept=mean(V, na.rm=T)),   # Ignore NA values for mean
+                 color = "red", linetype = "dashed", size = 1)+
+      xlab("Variable") + ggtitle("b) PDF")
+
+    if(log.hist == "Log"){
+      pbaseh <- pbaseh + scale_x_log10()
+    }
+    #
+    # Autocorrelation function
+    #
+    pacf <- ggplot() + geom_linerange(aes(x = lag, ymin = ymin, ymax = ymax),
+                                      data = data.acf.df,
+                                      color = "#6666CC" ) +
+      xlab("Lag") + ylab("Correlation Coeff.") + ggtitle("c) Autocorrelation Function")
+    #
+    # Periodogram function
+    #
+    pspec <- ggplot() + geom_line(aes(x = freq, y = spec), data = spectrum.df, color = "#6666CC") +
+      xlab("Frequency") + ylab("Spectral Energy") + ggtitle("d) Smoothed Periodogram")
+    if(log.spec == "Log"){
+      pspec <- pspec + scale_y_log10()
+    }
+    layout.matrix <- rbind(c(1, 2, 5), c(3, 4, 5))
+    grid.arrange(tsbase, pbaseh, pacf, pspec,
+                 nrow=2, ncol = 2,
+                 as.table=TRUE,
+                 heights=c(1,1))
+
+    val <- c(format(mean(data.df$V), digits = 5),
+             format(sqrt(var(data.df$V)), digits = 5),
+             format(skewness(data.df$V), digits = 5),
+             format(kurtosis(data.df$V), digits = 5),
+             format(mean(data.df$V)/sqrt(var(data.df$V)), digits = 5),
+             length(data.df$V),
+             format(max(data.df$V), digits = 5),
+             format(quantile(data.df$V, 0.75), digits = 5),
+             format(quantile(data.df$V,.5), digits = 5),
+             format(quantile(data.df$V,.25), digits = 5),
+             format(min(data.df$V), digits = 5))
+    val <- matrix(val, 11)
+    #SummaryTable <- data.frame( mean = )
+    # # Set theme to allow for plotmath expressions
+    tt <- ttheme_default(colhead=list(fg_params = list(parse=TRUE)))
+    tbl <- tableGrob(val,
+                     rows = c("Mean", "Std.Deviation", "Skewness", "Kurtosis",
+                              "Coef.variation", "Number Data", "Maximum",
+                              "Q3", "Q2", "Q1", "Minimum"),
+                     cols = 'Value',
+                     theme=tt)
+    #
+    grid.arrange(tsbase, pbaseh, pacf, pspec, tbl,
+                 layout_matrix = layout.matrix, widths = c(1, 1, 0.5))
+  })
+  ##########################################################################################
+  #                                Consistency Tab
+  ##########################################################################################
+  # #
+  output$consist1 <- renderUI({
+    tmp <- NULL
+    if(input$consisttype == "None")
+      return(NULL)
+    if(input$consistmethod == "None")
+      return(NULL)
+    if(input$consistmethod == "DoubleMass"){
+      if(!is.null(server.env$current.table)){
+        current.names <-  c("None", server.env$current.varnames)
+        tmp <- selectInput(inputId= "doublemass.ref", label = "Reference Station",
+                    choices = current.names)
+      }
+    }
+    else if(input$consistmethod == "Bois"){
+      if(!is.null(server.env$current.table)){
+        current.names <-  c("None", server.env$current.varnames)
+        tmp <- selectInput(inputId= "bois.ref", label = "Reference Station",
+                           choices = current.names)
+      }
+    }
+    return(tmp)
+  })
+  #
+  output$consist2 <- renderUI({
+    tmp <- NULL
+    if(input$consisttype == "None")
+      return(NULL)
+    if(input$consistmethod == "None")
+      return(NULL)
+    if(input$consistmethod == "DoubleMass"){
+      if(!is.null(server.env$current.table)){
+        current.names <-  c("None", server.env$current.varnames)
+        tmp <- selectInput(inputId= "doublemass.test", label = "Test Station",
+                    choices = current.names)
+      }
+    }
+    else if(input$consistmethod == "Bois"){
+      if(!is.null(server.env$current.table)){
+        current.names <-  c("None", "Null", server.env$current.varnames)
+        tmp <- selectInput(inputId= "bois.test", label = "Test Station",
+                           choices = current.names)
+      }
+    }
+    return(tmp)
+  })
+  #
+  output$consist3 <- renderUI({
+    tmp <- NULL
+    if(input$consisttype == "None")
+      return(NULL)
+    if(input$consistmethod == "None")
+      return(NULL)
+    if(input$consistmethod == "Bois"){
+      tmp <- textInput(inputId = "bois.alpha", label = "Significance Level alpha",
+                       value = "0.025")
+    }
+    return(tmp)
+  })
+
+  #
+  output$consistency <- renderPlot({
+    current.table <- server.env$current.table
+    if(is.null(current.table))
+      return(NULL)
+    if(input$consisttype == "None")
+      return(NULL)
+    if(input$consistmethod == "None"){
+      return(NULL)
+    }
+    pres <- NULL
+    if(input$consistmethod == "DoubleMass"){
+      ref.var <- input$doublemass.ref
+      if(is.null(ref.var) || ref.var == "None")
+        return(NULL)
+      test.var <- input$doublemass.test
+      if(is.null(test.var) || test.var == "None")
+        return(NULL)
+      ref <- as.matrix(unname(current.table[ref.var]))
+      test <- as.matrix(unname(current.table[test.var]))
+      #print(test)
+      doublemass <- double_mass_curve(ref,test)
+      #print(doublemass)
+      dm.df <- data.frame(ref = doublemass$S1ref, test = doublemass$S1)
+      #
+      # Create plot
+      #
+      mx.val <- max(c(max(doublemass$S1ref),max(doublemass$S1)))
+      line.df <- data.frame(x=c(0,mx.val),y=c(0,mx.val))
+      pres <- ggplot() + geom_line(aes(x = ref, y = test), data = dm.df) +
+        geom_line(aes(x = x, y = y), data =line.df, col ="red") +
+        coord_fixed() + xlab(paste0("Reference Station:",ref.var)) +
+        ylab(paste0("Test Station:",test.var))
+      #
+    }
+    else if(input$consistmethod == "Bois"){
+      ref.var <- input$bois.ref
+      if(is.null(ref.var) || ref.var == "None")
+        return(NULL)
+      test.var <- input$bois.test
+      if(is.null(test.var) || test.var == "None")
+        return(NULL)
+      ref <- as.matrix(unname(current.table[ref.var]))
+      ndat <- nrow(ref)
+      alpha <- as.numeric(input$bois.alpha)
+      bois.results <- NULL
+      if(test.var != "Null"){
+        test <- as.matrix(unname(current.table[test.var]))
+        bois.results <- bois_test(Serie1 = ref, Serie2 = test, alpha = alpha)
+      }
+      else{
+        bois.results <- bois_test(Serie1 = ref, alpha = alpha)
+      }
+      #print(length(bois.results$residuals))
+      bois.res.df <- data.frame(tt = 0:ndat, residuals = bois.results$residuals,
+                                ellipse.inf = bois.results$ellipse.inf,
+                                ellipse.sup = bois.results$ellipse.sup)
+      #
+      # Check residuals outside the ellipse
+      #
+      pos_pos <- bois.results$residuals > bois.results$ellipse.sup
+      pos_neg <- bois.results$residuals < bois.results$ellipse.inf
+      #
+      # Create plot
+      #
+      pres <- ggplot() + geom_line(aes(x = tt, y = residuals), data = bois.res.df, col = "red") +
+        geom_line(aes(x = tt, y = ellipse.inf), data = bois.res.df) +
+        geom_line(aes(x = tt, y = ellipse.sup), data = bois.res.df) +
+        xlab("Time") + ylab("Cumulative Residual")
+      if(test.var != "Null"){
+        pres <- pres + ggtitle(paste0("Results of Bois Test: Stations ", ref.var,"(Ref.), ",
+                                              test.var,"(Test)"))
+      }
+      else {
+        pres <- pres + ggtitle(paste0("Results of Bois Test: Stations ", ref.var,"(Ref.)"))
+      }
+      if(!is.null(pos_pos) & length(pos_pos) > 0){
+        tmp <- cbind(bois.res.df$ellipse.sup, bois.res.df$residuals)
+        bois.res.df$area.sup <- apply(tmp, 1, max)
+        pres <- pres + geom_ribbon(aes(x = tt, ymin = ellipse.sup, ymax = area.sup),
+                                 data = bois.res.df, color = "black", alpha = 0.6, fill = "red")
+      }
+      if(!is.null(pos_neg) & length(pos_neg) > 0){
+        tmp <- cbind(bois.res.df$ellipse.inf, bois.res.df$residuals)
+        bois.res.df$area.inf <- apply(tmp, 1, min)
+        pres <- pres + geom_ribbon(aes(x = tt, ymin = ellipse.inf, ymax = area.inf),
+                                   data = bois.res.df, color = "black", alpha = 0.6, fill = "red")
+      }
+    }
+    return(pres)
+  })
+
+  ##########################################################################################
+  #                                Water Budget Tab
+  ##########################################################################################
+  output$budget1 <- renderUI({
+    if(input$budgetmethod == "Direct"){
+      if(!is.null(server.env$current.table)){
+        current.names <-  c("None", server.env$current.varnames)
+        selectInput(inputId= "Budget.prec", label = "Precipitation",
+                    choices = current.names)}
+    }
+  })
+  #
+  output$budget2 <- renderUI({
+    if(input$budgetmethod == "Direct"){
+      if(!is.null(server.env$current.table)){
+        radioButtons(inputId = "EVTcalculation", label = "EVT Calculation",
+                     choices = c(EVT = "EVT", Temperature = "Temperature"))
+        }
+    }
+  })
+  #
+  output$budget3 <- renderUI({
+    if(input$budgetmethod == "Direct"){
+      if(!is.null(server.env$current.table)){
+        current.names <-  c("None", server.env$current.varnames)
+        selectInput(inputId= "Budget.evtcol", label = "Variable",
+                    choices = current.names)}
+    }
+  })
+  #
+  output$budget4 <- renderUI({
+    if(input$budgetmethod == "Direct"){
+      if(!is.null(server.env$current.table)){
+        current.names <-  c("None", server.env$current.varnames)
+        textInput(inputId= "Budget.rmax", label = "Max. Soil Retention",
+                    value = "100")}
+    }
+  })
+  #
+  output$budget5 <- renderUI({
+    if(input$budgetmethod == "Direct"){
+      if(!is.null(server.env$current.table)){
+        checkboxInput(inputId = "Budget.table", label = "Water Budget Table",
+                      value = FALSE)
+
+      }
+    }
+  })
+  #
+  output$water.budget <- renderPlot({
+    current.table <- server.env$current.table
+    if(is.null(current.table))
+      return(NULL)
+    var.prec <- input$Budget.prec
+    if(is.null(var.prec) || var.prec == "None")
+      return(NULL)
+    var.evt <- input$Budget.evtcol
+    if(is.null(var.evt) || var.evt == "None")
+      return(NULL)
+    #print(var.prec)
+    EVT <- NULL
+    Prec <- as.matrix(current.table[var.prec])
+    if(input$Budget.evtcol == "EVT"){
+      EVT <- as.matrix(current.table[var.evt])
+    }
+    else{
+      #print(current.table[var.evt])
+      EVT <- evt_thornthwaite(as.matrix(current.table[var.evt]))
+      #print(EVT)
+    }
+    #print(Prec)
+    Rmax <- as.numeric(input$Budget.rmax)
+    water.budget <- NULL
+    if(input$budgetmethod == "Direct"){
+      water.budget <- water_budget_direct(Prec, EVT, Rmax)
+    }
+    if(is.null(water.budget))
+      return(NULL)
+    #print(water.budget$R)
+    precip <- cbind(rep("Precipitation", 12))
+    evtt <- cbind(rep("PotentialEVT", 12))
+    storage <- cbind(rep("Storage",12))
+    deficit <- cbind(rep("Deficit",12))
+    excess <- cbind(rep("Excess",12))
+    runoff <- cbind(rep("Runoff",12))
+    perc <- cbind(rep("Recharge",12))
+    evtr <- cbind(rep("RealEVT",12))
+    process <- rbind(storage, deficit, excess, runoff, perc, evtr)
+    quantities <- rbind(cbind(water.budget$R), cbind(water.budget$WD),
+                        cbind(water.budget$WE), cbind(water.budget$RN),
+                        cbind(water.budget$PC), cbind(water.budget$ETR))
+    months <- cbind(rep(seq(1,12,1),6))
+    water.budget.df <- data.frame(month = months, quantities = quantities,
+                                  process = process)
+    process1 <- rbind(cbind(rep("Precipitation", 12)), cbind(rep("EVT", 12)))
+    data.df <- data.frame(month = months[1:24], quantities = rbind(unname(Prec),unname(EVT)),
+                          process = process1)
+    names(data.df) <- c("month", "quantities", "process")
+    #
+    # Create plots
+    #
+    vmax <- max(c(max(Prec),max(EVT)))
+    phydro <- ggplot() + geom_line(aes(x = month, y = quantities, color = process),
+                                         data = data.df) +
+      ylim(0, vmax) +
+      theme(legend.title=element_blank())
+    #
+    pos <- water.budget.df$process == "Storage"
+    preserve <- ggplot() +  geom_area(aes(x = month, y = quantities, fill = process),
+                                         data = water.budget.df[pos,]) +
+      ylim(0, vmax) + xlim(1,12) +
+      scale_fill_manual(values=c("#3399FF"))  + theme(legend.title=element_blank())
+    #
+    pos <- water.budget.df$process == "RealEVT"
+    pevt <- ggplot() +  geom_area(aes(x = month, y = quantities, fill = process),
+                                  data = water.budget.df[pos,]) + ylim(0, vmax) +
+      scale_fill_manual(values=c("#00CC33")) + theme(legend.title=element_blank())
+    #
+    pos <- water.budget.df$process == "Deficit"
+    pdeficit <- ggplot() +  geom_area(aes(x = month, y = quantities, fill = process),
+                                  data = water.budget.df[pos,]) + ylim(0, vmax) +
+      scale_fill_manual(values=c("#CC6666")) + theme(legend.title=element_blank())
+    #
+    pos <- water.budget.df$process == "Excess"
+    pexcess <- ggplot() +  geom_area(aes(x = month, y = quantities, fill = process),
+                                     data = water.budget.df[pos,]) + ylim(0, vmax) +
+      scale_fill_manual(values=c("#3366FF")) + theme(legend.title=element_blank())
+    #
+    pos <- water.budget.df$process == "Runoff"
+    prunoff <- ggplot() +  geom_area(aes(x = month, y = quantities, fill = process),
+                                     data = water.budget.df[pos,]) + ylim(0, vmax) +
+      scale_fill_manual(values=c("#FF0033")) + theme(legend.title=element_blank())
+    #
+    # Create dataframe for Table
+    #
+    if(input$Budget.table){
+      water.budget.mt <- matrix(0.0, nrow = 12, ncol = 8)
+      water.budget.mt[,1] <- Prec
+      water.budget.mt[,2] <- EVT
+      water.budget.mt[,3] <- as.numeric(water.budget$R)
+      water.budget.mt[,4] <- as.numeric(water.budget$ETR)
+      water.budget.mt[,5] <- as.numeric(water.budget$WE)
+      water.budget.mt[,6] <- as.numeric(water.budget$WD)
+      water.budget.mt[,7] <- as.numeric(water.budget$RN)
+      water.budget.mt[,8] <- as.numeric(water.budget$PC)
+      #
+      water.budget.mt <- t(water.budget.mt)
+      rownames(water.budget.mt) <- c("Prec","EVT","Reserve","ETR","Excess","Deficit","Runoff","Recharge")
+      colnames(water.budget.mt) <- c("Jan","Feb","March","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")
+      server.env$water.budget.mt <- water.budget.mt
+      output$view.budget <- renderTable({ water.budget.mt }, rownames = TRUE)
+    }
+
+
+    #
+    grid.arrange(phydro, preserve, pevt, pdeficit, pexcess, prunoff,
+                 nrow = 3, ncol = 2,
+                 as.table=TRUE,
+                 heights=c(3,3,3))
+  })
+  ##########################################################################################
+  #                             Baseflow Tab
+  ##########################################################################################
+  output$BFvarnames <- renderUI({
+    if(!is.null(server.env$current.table)){
+      current.names <-  c("None", server.env$current.varnames)
+      selectInput(inputId= "BFvarnames1", label = "Discharge",
+                  choices = current.names)
+    }
+  })
+  #
+  output$baseflow <- renderPlot({
+    current.table <- server.env$current.table
+    if(is.null(current.table))
+      return(NULL)
+    current.var <- input$BFvarnames1
+    if(is.null(current.var) || current.var == "None")
+      return(NULL)
+    Q <- as.numeric(as.matrix(current.table[current.var]))
+    nd <- length(Q)
+    #print(Q)
+    alpha <- 0.0
+    BSImax <- 0.0
+    baseflow <- vector('numeric', length = nd)
+    if(input$method == 'None'){
+      return(NULL)
+    }
+    if(input$method == 'Graphical'){
+      res_baseflow <- baseflow_graphical(Q)
+      t <- res_baseflow$t
+      baseflow <- c(res_baseflow$Qbf[2:nd],res_baseflow$Qbf[nd])
+    }
+    if(input$method == 'Nathan'){
+      alpha1 <- as.numeric(input$nathan.alpha)
+      baseflow <- nathan_filter(Q, alpha1)
+    }
+    if(input$method == 'Chapman'){
+      alpha2 <- as.numeric(input$chapman.alpha)
+      baseflow <- chapman_filter(Q, alpha2)
+    }
+    if(input$method == 'Eckhardt'){
+      alpha <- as.numeric(input$eckhardt.alpha)
+      BFImax <- as.numeric(input$eckhardt.bfi)
+      #print(c(alpha, BFImax))
+      baseflow <- eckhardt_filter(Q, alpha, BFImax)
+    }
+    #
+    rtmn <- input$plot.range
+    #
+    # Create plot
+    #
+    nd <- length(Q)
+    tt <- rep(seq(1, nd, 1),2)
+    Q1 <- as.matrix(Q,nd,1)
+    bf1 <- as.matrix(baseflow,nd,1)
+    discharge <- rbind(Q1,bf1)
+    Qlabel <- rep("Q", nd)
+    bflabel <- rep("Baseflow", nd)
+    process <- c(Qlabel, bflabel)
+    #print(discharge)
+    #print(process)
+    baseflow.df <- data.frame(t = tt, discharge = discharge, process = process)
+    p <- ggplot() + geom_line(aes(x = t, y = discharge, color = process), data = baseflow.df)
+    return(p)
+  })
+  ##########################################################################################
+  #                             Frequency Analysis Tab
+  ##########################################################################################
+  output$freq1 <- renderUI({
+    if(!is.null(server.env$current.table)){
+      current.names <-  c("None", server.env$current.varnames)
+      selectInput(inputId= "freqvarnames", label = "Variable",
+                  choices = current.names, selected = "None")
+    }
+  })
+  #
+  output$freq2 <- renderUI({
+    current.table <- server.env$current.table
+    tmp <- NULL
+    if(!is.null(current.table)){
+      if(input$freqselect == "SelectModel")
+        tmp <- selectInput(inputId = "freqmodel", label = "Model", choices = model.types )
+      else if(input$freqselect == "ParameterEstimation"){
+        tmp <- selectInput(inputId = "Parestmethod", label = "Method", choices =
+                             c( None = "None", Moments="Moments", MLE = "MLE",
+                                LMoments = "LMoments"))
+      }
+    }
+    return(tmp)
+  })
+  #
+  output$freq3 <- renderUI({
+    current.table <- server.env$current.table
+    tmp <- NULL
+    if(!is.null(current.table)){
+      if(input$freqselect == "ParameterEstimation"){
+        tmp <- radioButtons(inputId = "freqmodel1", label = "PDF model",
+                            choices = c(None = "None", Normal="Normal", LogNormal = "LogNormal",
+                                        Gumbel = "Gumbel", GEV = "GEV"))
+      }
+    }
+    return(tmp)
+  })
+  #
+  # output$freq4 <- renderUI({
+  #   current.table <- server.env$current.table
+  #   tmp <- NULL
+  #   if(!is.null(current.table)){
+  #     if(input$freqselect == "SelectModel"){
+  #       tmp <- selectInput(inputId = "freqtrans", label = "Data Transformation",
+  #                          choices = c(None = "None", Log = "Log"),
+  #                          selected = "None")
+  #     }
+  #   }
+  #   return(tmp)
+  # })
+  #
+  output$frequency <- renderPlot({
+    pfreq <- NULL
+    current.table <- server.env$current.table
+    if(is.null(current.table))
+      return(NULL)
+    if(input$freqselect == "None")
+      return(NULL)
+    if(input$freqselect == "SelectModel"){
+      current.model <- input$freqmodel
+      #print(current.model)
+      if(is.null(current.model))
+        return(NULL)
+      if(current.model == "None" )
+        return(NULL)
+      current.var <- input$freqvarnames
+      if(current.var == "None")
+        return(NULL)
+      var <- as.matrix(unname(current.table[current.var]))
+      freq.results <- empirical_frequency(var, current.model)
+      prob.results <- probability_plot(var, current.model)
+      #print(prob.results)
+      #print(current.model)
+      current.title <- paste0("Empirical Frequency Diagram: Model ", current.model)
+      current.ylabel <- paste0("Standard ", current.model, " variable")
+      Prob.df <- data.frame(var = prob.results$Var, model.var = prob.results$z)
+      pfreq <- ggplot() + geom_point(aes(x = var, y = model.var), data = Prob.df) +
+        geom_smooth(aes(x = var, y = model.var), data = Prob.df, method = "lm",
+                    formula = y ~ x, se = FALSE)+
+        xlab("Variable") + ylab(current.ylabel) +
+        ggtitle(current.title)
+      if(input$freqmodel == "lognormal" | input$freqmodel == "logpearson3")
+        pfreq <- pfreq + scale_x_log10()
+    }
+    return(pfreq)
+  })
+})
