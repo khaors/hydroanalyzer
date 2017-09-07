@@ -5,9 +5,10 @@
 #' @param Sref Numeric vector with the values of the reference time series
 #' @param S1 Numeric vector with the values of the hydrological time series to be checked
 #' @return
-#' A list with the following entries
+#' A list with the following entries:
 #' \itemize{
-#' \item
+#' \item S1ref: Cumulative values of the reference station
+#' \item S1: Cumulative values of the testing stations
 #' }
 #' @export
 #' @author
@@ -36,10 +37,10 @@ double_mass_curve <- function(Sref, S1){
 #' @return
 #' A list with the following entries:
 #' \itemize{
-#' \item residuals:
-#' \item Ellipse.sup:
-#' \item Ellipse.inf:
-#' \item ylim:
+#' \item residuals: Numeric vector with the residuals calculated for the testing station.
+#' \item Ellipse.sup: Numeric vector with the values of the upper region of the confidence ellipse.
+#' \item Ellipse.inf: Numeric vector with the values of the lower region of the confidence ellipse.
+#' \item ylim: Numeric vector with the min and max value reached by the confidence ellipse.
 #' }
 #' @author
 #' Oscar Garcia-Cabrejo \email{khaors@gmail.com}
@@ -70,9 +71,9 @@ bois_test <- function(Serie1, Serie2, alpha){
   }
   E <- c(0, cumsum(series.res))
   jj <- 0:ndat1
-  alpha1 <- 1-0.5*alpha
+  alpha1 <- 1.0-0.5*alpha
   z1 <- qnorm(alpha1)*sigma.res*sqrt((jj*(ndat1-jj)*(ndat1-1)/ndat1^2))
-  z2 <- -qnorm(alpha1)*sigma.res*sqrt((jj*(ndat1-jj)*(ndat1-1)/ndat1^2))
+  z2 <- -1*qnorm(alpha1)*sigma.res*sqrt((jj*(ndat1-jj)*(ndat1-1)/ndat1^2))
   mn <- min(c(min(E),min(z2)))
   mx <- max(c(max(E),max(z1)))
   results <- list(residuals = E, ellipse.sup = z1, ellipse.inf = z2, ylim = c(mn,mx))

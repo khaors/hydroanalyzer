@@ -12,9 +12,10 @@ double_mass_curve(Sref, S1)
 \item{S1}{Numeric vector with the values of the hydrological time series to be checked}
 }
 \value{
-A list with the following entries
+A list with the following entries:
 \itemize{
-\item
+\item S1ref: Cumulative values of the reference station
+\item S1: Cumulative values of the testing stations
 }
 }
 \description{

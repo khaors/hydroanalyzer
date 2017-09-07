@@ -16,10 +16,10 @@ bois_test(Serie1, Serie2, alpha)
 \value{
 A list with the following entries:
 \itemize{
-\item residuals:
-\item Ellipse.sup:
-\item Ellipse.inf:
-\item ylim:
+\item residuals: Numeric vector with the residuals calculated for the testing station.
+\item Ellipse.sup: Numeric vector with the values of the upper region of the confidence ellipse.
+\item Ellipse.inf: Numeric vector with the values of the lower region of the confidence ellipse.
+\item ylim: Numeric vector with the min and max value reached by the confidence ellipse.
 }
 }
 \description{
