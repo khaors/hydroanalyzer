@@ -84,16 +84,6 @@ shinyServer(function(input, output, session) {
     ndat <- nrow(the.table)
     server.env$current.table <- the.table
     server.env$current.varnames <- names(the.table)
-    #print(input$time.start)
-    #print(class(input$time.start))
-    #start.date.vec <- as.numeric(unlist(strsplit(input$time.start,",")))
-    #print(start.date.vec)
-    #server.env$start.date <- as.Date(paste0(start.date.vec[1],"/",start.date.vec[2],"/","01"))
-    #server.env$start.date.vec <- start.date.vec
-    #print(start.date)
-    #the.table1 <- subset(the.table, select = -t)
-    #freq <- input$time.freq
-    #server.env$cfreq <- switch(freq, years = 0, months = 12, days = 365, hours = 0)
     the.table
   })
   # data preview table
