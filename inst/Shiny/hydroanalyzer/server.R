@@ -207,7 +207,6 @@ shinyServer(function(input, output, session) {
              format(min(data.df$V), digits = 5))
     val <- matrix(val, 11)
     #SummaryTable <- data.frame( mean = )
-    # # Set theme to allow for plotmath expressions
     tt <- ttheme_default(colhead=list(fg_params = list(parse=TRUE)))
     tbl <- tableGrob(val,
                      rows = c("Mean", "Std.Deviation", "Skewness", "Kurtosis",
