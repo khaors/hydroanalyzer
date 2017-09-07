@@ -23,19 +23,9 @@ empirical_frequency <- function(Var1, model){
   model.par.c <- list("weibull" = 0.0, "median" = 0.3175, "hosking" = 0,
                       "blom" = 0.375, "cunnane" = 0.4, "gringorten" = 0.44,
                       "hazen" = 0.5)
-  # model.types <- c("None", "normal", "lognormal", "exponential", "gumbel", "weibull",
-  #                  "gev", "pearson3", "logpearson3", "uniform")
-  # Normal: blom
-  # Exponential + Gumbel: Gringorten
-  # gev: cunnane
-  # Pearson Type 3: Blom
-  # model.par.c <- list("normal" = 0.375, "lognormal" = 0.375, "exponential" = 0.44,
-  #                     "gumbel" = 0.44, "weibull" = 0.0, "gev" = 0.4, "pearson3" = 0.375,
-  #                     "logpearson3" = 0.375, "uniform" = 0.0)
   Var1s <- sort(Var1, index.return = TRUE)
   n <- length(Var1)
   r <- 1:n
-  #print((r-model.par.c[[model]]))
   Freq <- (r-model.par.c[[model]])/(n+1-2*model.par.c[[model]])
   results <- list(Var = Var1s$x, Freq = Freq, Treturn = 1.0/(1.0-Freq))
   return(results)
@@ -71,7 +61,6 @@ probability_plot <- function(Var, model){
     z <- (p^.135-(1-p)^.135)/.1975
   }
   else if(model == "lognormal"){
-    #Var1s$x <- log(Var1s$x)
     z <- (p^.135-(1-p)^.135)/.1975
   }
   else if(model == "exponential"){
@@ -92,7 +81,6 @@ probability_plot <- function(Var, model){
     z <- quape3(p)
   }
   else if(model == "logpearson3"){
-    #Var1s$x <- log(Var1s$x)
     z <- quape3(p)
   }
   else if(model == "uniform"){
