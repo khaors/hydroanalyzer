@@ -285,9 +285,7 @@ shinyServer(function(input, output, session) {
         return(NULL)
       ref <- as.matrix(unname(current.table[ref.var]))
       test <- as.matrix(unname(current.table[test.var]))
-      #print(test)
       doublemass <- double_mass_curve(ref,test)
-      #print(doublemass)
       dm.df <- data.frame(ref = doublemass$S1ref, test = doublemass$S1)
       #
       # Create plot
@@ -318,7 +316,6 @@ shinyServer(function(input, output, session) {
       else{
         bois.results <- bois_test(Serie1 = ref, alpha = alpha)
       }
-      #print(length(bois.results$residuals))
       bois.res.df <- data.frame(tt = 0:ndat, residuals = bois.results$residuals,
                                 ellipse.inf = bois.results$ellipse.inf,
                                 ellipse.sup = bois.results$ellipse.sup)
@@ -416,18 +413,14 @@ shinyServer(function(input, output, session) {
     var.evt <- input$Budget.evtcol
     if(is.null(var.evt) || var.evt == "None")
       return(NULL)
-    #print(var.prec)
     EVT <- NULL
     Prec <- as.matrix(current.table[var.prec])
     if(input$Budget.evtcol == "EVT"){
       EVT <- as.matrix(current.table[var.evt])
     }
     else{
-      #print(current.table[var.evt])
       EVT <- evt_thornthwaite(as.matrix(current.table[var.evt]))
-      #print(EVT)
     }
-    #print(Prec)
     Rmax <- as.numeric(input$Budget.rmax)
     water.budget <- NULL
     if(input$budgetmethod == "Direct"){
@@ -435,7 +428,6 @@ shinyServer(function(input, output, session) {
     }
     if(is.null(water.budget))
       return(NULL)
-    #print(water.budget$R)
     precip <- cbind(rep("Precipitation", 12))
     evtt <- cbind(rep("PotentialEVT", 12))
     storage <- cbind(rep("Storage",12))
@@ -560,7 +552,6 @@ shinyServer(function(input, output, session) {
     if(input$method == 'Eckhardt'){
       alpha <- as.numeric(input$eckhardt.alpha)
       BFImax <- as.numeric(input$eckhardt.bfi)
-      #print(c(alpha, BFImax))
       baseflow <- eckhardt_filter(Q, alpha, BFImax)
     }
     #
@@ -576,8 +567,6 @@ shinyServer(function(input, output, session) {
     Qlabel <- rep("Q", nd)
     bflabel <- rep("Baseflow", nd)
     process <- c(Qlabel, bflabel)
-    #print(discharge)
-    #print(process)
     baseflow.df <- data.frame(t = tt, discharge = discharge, process = process)
     p <- ggplot() + geom_line(aes(x = t, y = discharge, color = process), data = baseflow.df)
     return(p)
@@ -643,7 +632,6 @@ shinyServer(function(input, output, session) {
       return(NULL)
     if(input$freqselect == "SelectModel"){
       current.model <- input$freqmodel
-      #print(current.model)
       if(is.null(current.model))
         return(NULL)
       if(current.model == "None" )
@@ -654,8 +642,6 @@ shinyServer(function(input, output, session) {
       var <- as.matrix(unname(current.table[current.var]))
       freq.results <- empirical_frequency(var, current.model)
       prob.results <- probability_plot(var, current.model)
-      #print(prob.results)
-      #print(current.model)
       current.title <- paste0("Empirical Frequency Diagram: Model ", current.model)
       current.ylabel <- paste0("Standard ", current.model, " variable")
       Prob.df <- data.frame(var = prob.results$Var, model.var = prob.results$z)
