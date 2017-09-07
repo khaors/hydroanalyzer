@@ -93,7 +93,6 @@ shinyServer(function(input, output, session) {
       return(NULL)
     if (ncol(d.input)>input$ncol.preview)
       d.input <- d.input[,1:input$ncol.preview]
-    #print("TABLE")
     head(d.input, n=input$nrow.preview)
   })
   #######################################################################################
@@ -125,30 +124,15 @@ shinyServer(function(input, output, session) {
     span.filter <-  as.numeric(unlist(strsplit(input$EDAfilter,",")))
     v.taper <- as.numeric(input$EDAtaper)
     log.spec <- input$EDAlogspec
-    # Create data.frame with timeseries
-    #tt <- seq(server.env$start.date, by = input$time.freq, length.out = nd)
     tt <- seq(1, nd, 1)
-    #data.df <- current.table
-    #print(current.var)
-    #print(current.table[current.var])
     V <- as.matrix(unname(current.table[current.var]))
     data.df <- data.frame(t = tt, V = V)
-    #cfreq <- server.env$cfreq
-    #start.date.vec <- server.env$start.date.vec
-    # if(cfreq != 0){
-    #   current.ts <- ts(V, start = start.date.vec,
-    #                               frequency = cfreq)
-    # }
-    # else{
-    #   current.ts <- ts(V, start = start.date)
-    # }
     current.ts <- ts(V)
     fn <- frequency(current.ts)
     # Calculate the autocorrelation function
     data.acf <- acf(current.ts, lag.max = max.lag, plot = F)
     data.acf.df <- data.frame(lag = data.acf$lag, ymax = data.acf$acf,
                                 ymin = matrix(0,max.lag+1))
-    #print(data.acf.df)
     # Calculate the spectral density
     current_spectrum <- spec.pgram(current.ts, spans = span.filter, taper = v.taper,
                                    detrend = T, plot = F)
