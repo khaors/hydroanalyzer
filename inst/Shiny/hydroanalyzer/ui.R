@@ -199,7 +199,7 @@ shinyUI(pageWithSidebar(
                br(),
                conditionalPanel(
                  condition = "input.budgetmethod == 'Direct'",
-                 p(HTML("Test"))),
+                 br()),
                uiOutput('budget1'),
                uiOutput('budget2'),
                uiOutput('budget3'),
