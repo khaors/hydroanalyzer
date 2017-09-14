@@ -138,6 +138,29 @@ shinyUI(pageWithSidebar(
                br()
       ),
       #########################################################################
+      #                    Panel 'Filling Missing Data'
+      #########################################################################
+      tabPanel("Filling Missing Data",
+               icon = icon("paint-brush"),
+               h3("Filling Missing Observations"),
+               br(),
+               h5("Sometimes the hydrologic time series are not complete due to
+                  different reasons (equipment failure, extreme events, human
+                  disturbances, mishandling of data records, accidental losses,
+                  etc)"),
+               br(),
+               selectInput(inputId = "fillingtype", label = "Method",
+                           choices = c(StationAverage="StationAverage",
+                                       MonthAverage="MonthAverage",
+                                       NormalRatio="NormalRatio",
+                                       IDW = "IDW", Regression = "Regression")),
+               br(),
+               uiOutput("filling1"),
+               uiOutput("filling2"),
+               uiOutput("filling3")
+
+      ),
+      #########################################################################
       #                    Panel 'Watershed Analysis'
       #########################################################################
       tabPanel("Watershed Analysis",
