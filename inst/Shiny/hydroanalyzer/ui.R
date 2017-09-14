@@ -17,9 +17,7 @@ shinyUI(pageWithSidebar(
   ##############################################################################
   sidebarPanel(
     imageOutput("uptc.logo", inline=TRUE),
- #   selectInput('type', "Select the Hydrological Info type:",
-#                c(TimeSeries="TimeSeries", GeographicInfo="GeographicInfo"),
-#                width="300px"),
+    #
     p(HTML("<h5>This is HydroAnalyzer-GUI, the Shiny interface for analysis and
            evaluation of hydrological data in <strong>R</strong>.</h5>
            This application can be used for the Exploratory Data Analysis of
