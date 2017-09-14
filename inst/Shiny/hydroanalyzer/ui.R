@@ -58,16 +58,7 @@ shinyUI(pageWithSidebar(
                       import button below. Your data must be supplied in the form of a text/csv file.
                       If the importation is done properly, a preview of the data is displayed below.
                       When this is done, go to the next step: Exploratory Data Analysis.")),
-               # p(HTML('The interface can be tested using example data files for
-               #        the <a href=
-               #        "http://owncloud.nathalievilla.org/public.php?service=files&t=a4b83ca82bcfc740ee0700cb44324c47"
-               #        target="_blank">numeric</a>, <a href=
-               #        "http://owncloud.nathalievilla.org/public.php?service=files&t=7a7db6e0a17127d8fe8ec43c0f6b0afd"
-               #        target="_blank">korresp</a> and <a href=
-               #        "http://owncloud.nathalievilla.org/public.php?service=files&t=2bd5a14bbf636ab9afe495b46e0d523a"
-               #        target="_blank">relational </a> algorithms (download these files on your computer and
-               #        proceed).')),
-
+               #
                br(),
                checkboxInput('header', ' Header?', TRUE),
                checkboxInput('rownames', ' Row names?', FALSE),
