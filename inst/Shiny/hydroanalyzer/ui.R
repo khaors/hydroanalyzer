@@ -44,12 +44,6 @@ shinyUI(pageWithSidebar(
            <li> <span style="font-variant: small-caps;">Davie, T.</span> (2002).
            <I> Fundamentals of Hydrology</I> Routledge Fundamentals of Physical Geography,
            Routledge.</li>'))
-           # <li> <span style="font-variant: small-caps;">Freeze, Ch.</span>
-           # (2006). <I></I>, CRC Press, Boca Raton, Fl.</li>
-           # <li> <span style="font-variant: small-caps;">Sindalovskiy, L.</span>(2016).
-           # <I>Aquifer Test Solutions: A Practitioner’s Guide With Algorithms Using ANSDIMAT</I>
-           # Springer-Verlag, Heidelberg</li>'))#,
-    #width = 4
     ),
 
   # Show a plot of the generated distribution
