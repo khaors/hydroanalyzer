@@ -102,6 +102,7 @@ probability_plot <- function(Var, model){
 #' }
 #' @author
 #' Oscar Garcia-Cabrejo \email{khaors@gmail.com}
+#' @export
 calculate_diagram_moments <- function(){
   Cs <- seq(-1.5, 4.0, 0.01)
   #three-parameter lognormal distribution (LN3):
