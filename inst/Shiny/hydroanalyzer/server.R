@@ -624,8 +624,8 @@ shinyServer(function(input, output, session) {
     if(!is.null(current.table)){
       if(input$freqselect == "SelectModel")
         tmp <- selectInput(inputId = "freqmethod", label = "Method",
-                          choices = c("None", "Frequency Plot", "Moment Diagram",
-                                      "L-Moment Diagram"))
+                          choices = c("None", "Frequency Plot","Quantile Plot",
+                                      "Moment Diagram", "L-Moment Diagram"))
       else if(input$freqselect == "ParameterEstimation"){
         tmp <- selectInput(inputId = "Parestmethod", label = "Method", choices =
                              c( None = "None", Moments="Moments", MLE = "MLE",
@@ -647,32 +647,22 @@ shinyServer(function(input, output, session) {
         if(input$freqmethod == "Frequency Plot"){
           tmp <- selectInput(inputId = "freqmodel", label = "Model", choices = model.types )
         }
-        if(input$freqmethod == "Moment Diagram"){
+        if(input$freqmethod == "Quantile Plot"){
+          tmp <- selectInput(inputId = "freqmodel", label = "Model", choices = model.types )
+        }
+        else if(input$freqmethod == "Moment Diagram"){
           tmp <- NULL
         }
       }
       #
       if(input$freqselect == "ParameterEstimation"){
         tmp <- radioButtons(inputId = "freqmodel1", label = "PDF model",
-                            choices = c(None = "None", Normal="Normal", LogNormal = "LogNormal",
-                                        Gumbel = "Gumbel", GEV = "GEV"))
+                            choices = model.types)
       }
     }
     return(tmp)
   })
   #
-  # output$freq4 <- renderUI({
-  #   current.table <- server.env$current.table
-  #   tmp <- NULL
-  #   if(!is.null(current.table)){
-  #     if(input$freqselect == "SelectModel"){
-  #       tmp <- selectInput(inputId = "freqtrans", label = "Data Transformation",
-  #                          choices = c(None = "None", Log = "Log"),
-  #                          selected = "None")
-  #     }
-  #   }
-  #   return(tmp)
-  # })
   #
   output$frequency <- renderPlot({
     pfreq <- NULL
@@ -707,6 +697,20 @@ shinyServer(function(input, output, session) {
         if(input$freqmodel == "lognormal" | input$freqmodel == "logpearson3")
           pfreq <- pfreq + scale_x_log10()
       }
+      else if(input$freqmethod == "Quantile Plot"){
+        current.model <- input$freqmodel
+        if(is.null(current.model))
+          return(NULL)
+        if(current.model == "None" )
+          return(NULL)
+        current.var <- input$freqvarnames
+        if(current.var == "None")
+          return(NULL)
+        var <- as.matrix(unname(current.table[current.var]))
+        res.plplot <- probability_plot(var, current.model)
+        q.plt.df <- data.frame(x = res.plplot$Var, y = res.plplot$z)
+        pfreq <- ggplot() + geom_point(aes(x = x, y = y), data = q.plt.df)
+      }
       else if(input$freqmethod == "Moment Diagram"){
         current.var <- input$freqvarnames
         if(current.var == "None")
@@ -739,3 +743,13 @@ shinyServer(function(input, output, session) {
     return(pfreq)
   })
 })
+#
+# output$parameter.estimates <- renderUI({
+#   current.table <- server.env$current.table
+#   if(is.null(current.table))
+#     return(null)
+#   if(input$freqselect == "ParameterEstimation"){
+#
+#   }
+#
+# })

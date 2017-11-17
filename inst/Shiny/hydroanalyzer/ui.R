@@ -273,7 +273,8 @@ shinyUI(pageWithSidebar(
                uiOutput("freq1"),
                uiOutput("freq2"),
                uiOutput("freq3"),
-               plotOutput("frequency")
+               plotOutput("frequency"),
+               uiOutput("parameter.estimates")
       ),
       #########################################################################
       #                    Panel 'Regionalization'
