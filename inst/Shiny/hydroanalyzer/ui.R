@@ -170,7 +170,37 @@ shinyUI(pageWithSidebar(
       #                    Panel 'Spatial Analyisis'
       #########################################################################
       tabPanel("Spatial Analysis",
-               icon = icon("map-o")
+               icon = icon("map-o"),
+               h3("Estimating the spatial distribution of hydrological variables"),
+               br(),
+               h5("In most cases the hydrological variables are sampled at specific
+                   locations in space and using this information it is required to
+                   know the values at unsampled locations. In this case geostatistics
+                   comes to the rescue offering us a set of tools to solve this
+                   challenging problem"),
+               br(),
+               sidebarLayout(
+                 sidebarPanel(
+                   h4("Input Variables"),
+                   br(),
+                   fileInput('watershed.limit.fl', 'Choose a SHP File'),
+                   fileInput('DEM.fl', 'Choose a DEM File'),
+                   fileInput('rainfall.fl', 'Choose a CSV file')
+                 ),
+                 mainPanel(
+                   tabsetPanel(
+                     tabPanel("Spatial Correlation",
+                              br()
+
+                     ),
+                     tabPanel("Hydrological Maps",
+                       br(),
+                       plotOutput(outputId = "hydrologic.maps")
+                     )
+                   )
+                 )
+               )
+
       ),
       #########################################################################
       #                    Panel 'Water Budget'

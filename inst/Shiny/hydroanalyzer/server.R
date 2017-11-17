@@ -11,6 +11,10 @@ library(ggplot2)
 library(gridExtra)
 library(lubridate)
 library(moments)
+library(lmom)
+library(sp)
+library(gstat)
+library(rgdal)
 library(hydroanalyzer)
 #
 # Define Global Variables
@@ -34,6 +38,9 @@ shinyServer(function(input, output, session) {
   cfreq <- NULL
   first <- TRUE
   water.budget.mt <- NULL
+  watershed.limit.shp <- NULL
+  watershed.dem.raster <- NULL
+  watershed.rainfall.sp <- NULL
   # Output the uptc logo :
   output$uptc.logo <- renderImage(list(src="uptc_jpg.jpg"),
                                   deleteFile=FALSE)
@@ -300,7 +307,8 @@ shinyServer(function(input, output, session) {
     }
     else if(input$consistmethod == "Bois"){
       ref.var <- input$bois.ref
-      if(is.null(ref.var) || ref.var == "None")
+      if(is.null(ref.var) ||
+         ref.var == "None")
         return(NULL)
       test.var <- input$bois.test
       if(is.null(test.var) || test.var == "None")
@@ -353,6 +361,34 @@ shinyServer(function(input, output, session) {
     }
     return(pres)
   })
+  ########################################################################################
+  #                             Spatial Analysis TAB
+  ########################################################################################
+  read_watershed_limit <- reactive({
+    in.file <- input$watershed.limit.fl
+    if (is.null(in.file))
+      return(NULL)
+    watershed.limit.shp <- read.OGR(dsn=in.file, layer)
+    server.env$watershed.limit.shp <- watershed.limit.shp
+  })
+  #
+  read_dem_file <- reactive({
+    in.file <- input$DEM.fl
+    if(is.null(in.file))
+      return(NULL)
+    watershed.dem.raster <- readGDAL(in.file)
+    server.env$watershed.dem.raster <- watershed.dem.raster
+  })
+  #
+  read_rainfall_file <- reactive({
+    in.file <- input$rainfall.fl
+    if(is.null(in.file))
+      return(NULL)
+    rainfall
+  })
+
+
+
 
   ##########################################################################################
   #                                Water Budget Tab
@@ -587,7 +623,9 @@ shinyServer(function(input, output, session) {
     tmp <- NULL
     if(!is.null(current.table)){
       if(input$freqselect == "SelectModel")
-        tmp <- selectInput(inputId = "freqmodel", label = "Model", choices = model.types )
+        tmp <- selectInput(inputId = "freqmethod", label = "Method",
+                          choices = c("None", "Frequency Plot", "Moment Diagram",
+                                      "L-Moment Diagram"))
       else if(input$freqselect == "ParameterEstimation"){
         tmp <- selectInput(inputId = "Parestmethod", label = "Method", choices =
                              c( None = "None", Moments="Moments", MLE = "MLE",
@@ -601,6 +639,19 @@ shinyServer(function(input, output, session) {
     current.table <- server.env$current.table
     tmp <- NULL
     if(!is.null(current.table)){
+      if(input$freqselect == "SelectModel"){
+        if(is.null(input$freqmethod) || input$freqmethod == "None"){
+          return(NULL)
+          #tmp <- NULL
+        }
+        if(input$freqmethod == "Frequency Plot"){
+          tmp <- selectInput(inputId = "freqmodel", label = "Model", choices = model.types )
+        }
+        if(input$freqmethod == "Moment Diagram"){
+          tmp <- NULL
+        }
+      }
+      #
       if(input$freqselect == "ParameterEstimation"){
         tmp <- radioButtons(inputId = "freqmodel1", label = "PDF model",
                             choices = c(None = "None", Normal="Normal", LogNormal = "LogNormal",
@@ -631,27 +682,59 @@ shinyServer(function(input, output, session) {
     if(input$freqselect == "None")
       return(NULL)
     if(input$freqselect == "SelectModel"){
-      current.model <- input$freqmodel
-      if(is.null(current.model))
+      if(is.null(input$freqmethod))
         return(NULL)
-      if(current.model == "None" )
-        return(NULL)
-      current.var <- input$freqvarnames
-      if(current.var == "None")
-        return(NULL)
-      var <- as.matrix(unname(current.table[current.var]))
-      freq.results <- empirical_frequency(var, current.model)
-      prob.results <- probability_plot(var, current.model)
-      current.title <- paste0("Empirical Frequency Diagram: Model ", current.model)
-      current.ylabel <- paste0("Standard ", current.model, " variable")
-      Prob.df <- data.frame(var = prob.results$Var, model.var = prob.results$z)
-      pfreq <- ggplot() + geom_point(aes(x = var, y = model.var), data = Prob.df) +
-        geom_smooth(aes(x = var, y = model.var), data = Prob.df, method = "lm",
-                    formula = y ~ x, se = FALSE)+
-        xlab("Variable") + ylab(current.ylabel) +
-        ggtitle(current.title)
-      if(input$freqmodel == "lognormal" | input$freqmodel == "logpearson3")
-        pfreq <- pfreq + scale_x_log10()
+      if(input$freqmethod == "Frequency Plot"){
+        current.model <- input$freqmodel
+        if(is.null(current.model))
+          return(NULL)
+        if(current.model == "None" )
+          return(NULL)
+        current.var <- input$freqvarnames
+        if(current.var == "None")
+          return(NULL)
+        var <- as.matrix(unname(current.table[current.var]))
+        freq.results <- empirical_frequency(var, current.model)
+        prob.results <- probability_plot(var, current.model)
+        current.title <- paste0("Empirical Frequency Diagram: Model ", current.model)
+        current.ylabel <- paste0("Standard ", current.model, " variable")
+        Prob.df <- data.frame(var = prob.results$Var, model.var = prob.results$z)
+        pfreq <- ggplot() + geom_point(aes(x = var, y = model.var), data = Prob.df) +
+          geom_smooth(aes(x = var, y = model.var), data = Prob.df, method = "lm",
+                      formula = y ~ x, se = FALSE)+
+          xlab("Variable") + ylab(current.ylabel) +
+          ggtitle(current.title)
+        if(input$freqmodel == "lognormal" | input$freqmodel == "logpearson3")
+          pfreq <- pfreq + scale_x_log10()
+      }
+      else if(input$freqmethod == "Moment Diagram"){
+        current.var <- input$freqvarnames
+        if(current.var == "None")
+          return(NULL)
+        cs <- skewness(unname(current.table[current.var]))
+        ck <- kurtosis(unname(current.table[current.var]))
+        var <- data.frame(x=cs, y=ck)
+        moment.diagram <- calculate_diagram_moments()
+        LN3 <- as.data.frame(moment.diagram$LN3)
+        P3 <- as.data.frame(moment.diagram$P3)
+        GEV <- as.data.frame(moment.diagram$GEV)
+        N <- data.frame(x=0,y=0)
+        pfreq <- ggplot() + geom_line(aes(x = Cs, y = Ck), data = LN3, color = "red") +
+          geom_line(aes(x = Cs, y = Ck), data = P3, color = "blue") +
+          geom_line(aes(x = Cs, y = Ck), data = GEV, color = "green") +
+          geom_point(aes(x = x, y = y), data = N, color = "black") +
+          geom_point(aes(x = x, y = y), data = var, color = "yellow") +
+          xlim(-2.5*cs, 2.5*cs) +
+          ylim(0, 2.5*ck)
+      }
+      else if(input$freqmethod == "L-Moment Diagram"){
+        current.var <- input$freqvarnames
+        if(current.var == "None")
+          return(NULL)
+        tx <- as.matrix(current.table[current.var])
+        sample.lmom <- samlmu(tx)
+        pfreq <- lmrd(sample.lmom)
+      }
     }
     return(pfreq)
   })
