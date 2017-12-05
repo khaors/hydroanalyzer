@@ -11,7 +11,7 @@ bois_test(Serie1, Serie2, alpha)
 
 \item{Serie2}{A numeric vector with the values of the hydrologic time series to be checked}
 
-\item{alpha}{Significance level of the test}
+\item{alpha}{Significance level of the test (<1.0)}
 }
 \value{
 A list with the following entries:
@@ -25,6 +25,9 @@ A list with the following entries:
 \description{
 This is a non-parametric test designed to check for the existence of a trend in the time series
 of a single station or two stations using the cumulative residuals.
+}
+\seealso{
+Other consistency functions: \code{\link{double_mass_curve}}
 }
 \author{
 Oscar Garcia-Cabrejo \email{khaors@gmail.com}
