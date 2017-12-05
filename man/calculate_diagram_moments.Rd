@@ -9,10 +9,10 @@ calculate_diagram_moments()
 \value{
 A list with the following entries
 \itemize{
-\item N
-\item LN3
-\item P3
-\item GEV
+\item N: coordinates of the normal distribution
+\item LN3: coordinates of the three parameter Lognormal distribution
+\item P3: coordinates of the Pearson distribution
+\item GEV: coordinates of the Generalized Extreme Value distribution
 }
 }
 \description{
