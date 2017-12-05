@@ -13,6 +13,7 @@
 #' @export
 #' @author
 #' Oscar Garcia-Cabrejo \email{khaors@gmail.com}
+#' @family consistency functions
 double_mass_curve <- function(Sref, S1){
   ndat.ref <- length(Sref)
   ndat1 <- length(S1)
@@ -33,7 +34,7 @@ double_mass_curve <- function(Sref, S1){
 #' of a single station or two stations using the cumulative residuals.
 #' @param Serie1 A numeric vector with the values of the hydrologic time series to be checked
 #' @param Serie2 A numeric vector with the values of the hydrologic time series to be checked
-#' @param alpha Significance level of the test
+#' @param alpha Significance level of the test (<1.0)
 #' @return
 #' A list with the following entries:
 #' \itemize{
@@ -49,6 +50,7 @@ double_mass_curve <- function(Sref, S1){
 #' @importFrom stats qnorm
 #' @importFrom stats residuals
 #' @importFrom stats var
+#' @family consistency functions
 #' @export
 bois_test <- function(Serie1, Serie2, alpha){
   ndat1 <- length(Serie1)
