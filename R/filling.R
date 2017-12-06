@@ -1,4 +1,14 @@
-
+#' @title 
+#' filling_average_station
+#' @description 
+#' Function to fill the missing data of a hydrologic record using the average of the station
+#' @param Serie A numeric vector with the hydrologic time series
+#' @return 
+#' A numeric vector with the missing values filled with the station average
+#' @author 
+#' Oscar Garcia-Cabrejo \email{khaors@gmail.com}
+#' @family fill_data functions
+#' @export
 filling_average_station <- function(Serie){
   if(class(Serie) != "numeric"){
     stop("A numeric vector is required as input")
@@ -9,7 +19,17 @@ filling_average_station <- function(Serie){
   Serie1[pos] <- average_station
   return(Serie1)
 }
-#
+#' @title 
+#' filling_month_station
+#' @description 
+#' Function to fill the missing data of a hydrologic record using the monthly average
+#' @param Serie A numeric vector with the hydrologic time series to be filled
+#' @return 
+#' A numeric vector with the corrected hydrologic time series
+#' @author 
+#' Oscar Garcia-Cabrejo \email{khaors@gmail.com}
+#' @family fill_data functions
+#' @export
 filling_month_station <- function(Serie){
   if(class(Serie) != "numeric"){
     stop("A numeric vector is required as input")
@@ -35,6 +55,7 @@ filling_normal_ratio <- function(Serie1, Series){
   pg <- apply(Series, 2, mean, na.rm = TRUE)
   weights <- p0/pg
   p0corr <- sum(weights*pg)
+<<<<<<< HEAD
   return(p0corr)
 }
 #
@@ -55,4 +76,6 @@ filling_regression <- function(Serie1, Series){
   #
 
 
+=======
+>>>>>>> 1f39108c446db490f813856c5a76d8fd8e531953
 }

@@ -21,6 +21,9 @@ A list with the following entries:
 \description{
 Function to check the consistency between two hydrological time series using the double mass curve approach.
 }
+\seealso{
+Other consistency functions: \code{\link{bois_test}}
+}
 \author{
 Oscar Garcia-Cabrejo \email{khaors@gmail.com}
 }
