@@ -55,7 +55,6 @@ filling_normal_ratio <- function(Serie1, Series){
   pg <- apply(Series, 2, mean, na.rm = TRUE)
   weights <- p0/pg
   p0corr <- sum(weights*pg)
-<<<<<<< HEAD
   return(p0corr)
 }
 #
@@ -74,8 +73,5 @@ filling_regression <- function(Serie1, Series){
   Series_valid1 <- cbind(Serie1_valid, Series_valid)
   Series.df <- as.data.frame(Series_valid1)
   #
-
-
-=======
->>>>>>> 1f39108c446db490f813856c5a76d8fd8e531953
+  return(NULL)
 }
