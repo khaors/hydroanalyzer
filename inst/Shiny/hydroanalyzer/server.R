@@ -219,18 +219,36 @@ shinyServer(function(input, output, session) {
       return(NULL)
     if(input$consistmethod == "None")
       return(NULL)
-    if(input$consistmethod == "DoubleMass"){
-      if(!is.null(server.env$current.table)){
-        current.names <-  c("None", server.env$current.varnames)
-        tmp <- selectInput(inputId= "doublemass.ref", label = "Reference Station",
-                    choices = current.names)
+    if(input$consisttype == "Homogenous"){
+      if(input$homogeneousmethod == "VonNeumannTest"){
+        if(!is.null(server.env$current.table)){
+          current.names <- c("None", server.env$current.varnames)
+          tmp <- selectInput(inputId = "vonnewmann.ref", label = "Test Station", 
+                             choices = current.names)
+        }
+      }
+      else if(input$homogeneousmethod == "CumulativeResiduals"){
+        if(!is.null(server.env$current.table)){
+          current.names <- c("None", server.env$current.varnames)
+          tmp <- selectInput(inputId = "cumresiduals.ref", label = "Test Station", 
+                             choices = current.names)
+        }
       }
     }
-    else if(input$consistmethod == "Bois"){
-      if(!is.null(server.env$current.table)){
-        current.names <-  c("None", server.env$current.varnames)
-        tmp <- selectInput(inputId= "bois.ref", label = "Reference Station",
-                           choices = current.names)
+    if(input$consisttype == "Consistency"){
+      if(input$consistmethod == "DoubleMass"){
+        if(!is.null(server.env$current.table)){
+          current.names <-  c("None", server.env$current.varnames)
+          tmp <- selectInput(inputId= "doublemass.ref", label = "Reference Station",
+                             choices = current.names)
+        }
+      }
+      else if(input$consistmethod == "Bois"){
+        if(!is.null(server.env$current.table)){
+          current.names <-  c("None", server.env$current.varnames)
+          tmp <- selectInput(inputId= "bois.ref", label = "Reference Station",
+                             choices = current.names)
+        }
       }
     }
     return(tmp)
@@ -242,18 +260,20 @@ shinyServer(function(input, output, session) {
       return(NULL)
     if(input$consistmethod == "None")
       return(NULL)
-    if(input$consistmethod == "DoubleMass"){
-      if(!is.null(server.env$current.table)){
-        current.names <-  c("None", server.env$current.varnames)
-        tmp <- selectInput(inputId= "doublemass.test", label = "Test Station",
-                    choices = current.names)
+    if(input$consisttype == "Consistency"){
+      if(input$consistmethod == "DoubleMass"){
+        if(!is.null(server.env$current.table)){
+          current.names <-  c("None", server.env$current.varnames)
+          tmp <- selectInput(inputId= "doublemass.test", label = "Test Station",
+                             choices = current.names)
+        }
       }
-    }
-    else if(input$consistmethod == "Bois"){
-      if(!is.null(server.env$current.table)){
-        current.names <-  c("None", "Null", server.env$current.varnames)
-        tmp <- selectInput(inputId= "bois.test", label = "Test Station",
-                           choices = current.names)
+      else if(input$consistmethod == "Bois"){
+        if(!is.null(server.env$current.table)){
+          current.names <-  c("None", "Null", server.env$current.varnames)
+          tmp <- selectInput(inputId= "bois.test", label = "Test Station",
+                             choices = current.names)
+        }
       }
     }
     return(tmp)
@@ -265,9 +285,11 @@ shinyServer(function(input, output, session) {
       return(NULL)
     if(input$consistmethod == "None")
       return(NULL)
-    if(input$consistmethod == "Bois"){
-      tmp <- textInput(inputId = "bois.alpha", label = "Significance Level alpha",
-                       value = "0.025")
+    if(input$consisttype == "Consistency"){
+      if(input$consistmethod == "Bois"){
+        tmp <- textInput(inputId = "bois.alpha", label = "Significance Level alpha",
+                         value = "0.025")
+      }
     }
     return(tmp)
   })
@@ -283,83 +305,118 @@ shinyServer(function(input, output, session) {
       return(NULL)
     }
     pres <- NULL
-    if(input$consistmethod == "DoubleMass"){
-      ref.var <- input$doublemass.ref
-      if(is.null(ref.var) || ref.var == "None")
-        return(NULL)
-      test.var <- input$doublemass.test
-      if(is.null(test.var) || test.var == "None")
-        return(NULL)
-      ref <- as.matrix(unname(current.table[ref.var]))
-      test <- as.matrix(unname(current.table[test.var]))
-      doublemass <- double_mass_curve(ref,test)
-      dm.df <- data.frame(ref = doublemass$S1ref, test = doublemass$S1)
-      #
-      # Create plot
-      #
-      mx.val <- max(c(max(doublemass$S1ref),max(doublemass$S1)))
-      line.df <- data.frame(x=c(0,mx.val),y=c(0,mx.val))
-      pres <- ggplot() + geom_line(aes(x = ref, y = test), data = dm.df) +
-        geom_line(aes(x = x, y = y), data =line.df, col ="red") +
-        coord_fixed() + xlab(paste0("Reference Station:",ref.var)) +
-        ylab(paste0("Test Station:",test.var))
-      #
-    }
-    else if(input$consistmethod == "Bois"){
-      ref.var <- input$bois.ref
-      if(is.null(ref.var) ||
-         ref.var == "None")
-        return(NULL)
-      test.var <- input$bois.test
-      if(is.null(test.var) || test.var == "None")
-        return(NULL)
-      ref <- as.matrix(unname(current.table[ref.var]))
-      ndat <- nrow(ref)
-      alpha <- as.numeric(input$bois.alpha)
-      bois.results <- NULL
-      if(test.var != "Null"){
+    if(input$consisttype == "Consistency"){
+      if(input$consistmethod == "DoubleMass"){
+        ref.var <- input$doublemass.ref
+        if(is.null(ref.var) || ref.var == "None")
+          return(NULL)
+        test.var <- input$doublemass.test
+        if(is.null(test.var) || test.var == "None")
+          return(NULL)
+        ref <- as.matrix(unname(current.table[ref.var]))
         test <- as.matrix(unname(current.table[test.var]))
-        bois.results <- bois_test(Serie1 = ref, Serie2 = test, alpha = alpha)
+        doublemass <- double_mass_curve(ref,test)
+        dm.df <- data.frame(ref = doublemass$S1ref, test = doublemass$S1)
+        #
+        # Create plot
+        #
+        mx.val <- max(c(max(doublemass$S1ref),max(doublemass$S1)))
+        line.df <- data.frame(x=c(0,mx.val),y=c(0,mx.val))
+        pres <- ggplot() + geom_line(aes(x = ref, y = test), data = dm.df) +
+          geom_line(aes(x = x, y = y), data =line.df, col ="red") +
+          coord_fixed() + xlab(paste0("Reference Station:",ref.var)) +
+          ylab(paste0("Test Station:",test.var))
+        #
       }
-      else{
-        bois.results <- bois_test(Serie1 = ref, alpha = alpha)
-      }
-      bois.res.df <- data.frame(tt = 0:ndat, residuals = bois.results$residuals,
-                                ellipse.inf = bois.results$ellipse.inf,
-                                ellipse.sup = bois.results$ellipse.sup)
-      #
-      # Check residuals outside the ellipse
-      #
-      pos_pos <- bois.results$residuals > bois.results$ellipse.sup
-      pos_neg <- bois.results$residuals < bois.results$ellipse.inf
-      #
-      # Create plot
-      #
-      pres <- ggplot() + geom_line(aes(x = tt, y = residuals), data = bois.res.df, col = "red") +
-        geom_line(aes(x = tt, y = ellipse.inf), data = bois.res.df) +
-        geom_line(aes(x = tt, y = ellipse.sup), data = bois.res.df) +
-        xlab("Time") + ylab("Cumulative Residual")
-      if(test.var != "Null"){
-        pres <- pres + ggtitle(paste0("Results of Bois Test: Stations ", ref.var,"(Ref.), ",
-                                              test.var,"(Test)"))
-      }
-      else {
-        pres <- pres + ggtitle(paste0("Results of Bois Test: Stations ", ref.var,"(Ref.)"))
-      }
-      if(!is.null(pos_pos) & length(pos_pos) > 0){
-        tmp <- cbind(bois.res.df$ellipse.sup, bois.res.df$residuals)
-        bois.res.df$area.sup <- apply(tmp, 1, max)
-        pres <- pres + geom_ribbon(aes(x = tt, ymin = ellipse.sup, ymax = area.sup),
-                                 data = bois.res.df, color = "black", alpha = 0.6, fill = "red")
-      }
-      if(!is.null(pos_neg) & length(pos_neg) > 0){
-        tmp <- cbind(bois.res.df$ellipse.inf, bois.res.df$residuals)
-        bois.res.df$area.inf <- apply(tmp, 1, min)
-        pres <- pres + geom_ribbon(aes(x = tt, ymin = ellipse.inf, ymax = area.inf),
-                                   data = bois.res.df, color = "black", alpha = 0.6, fill = "red")
+      else if(input$consistmethod == "Bois"){
+        ref.var <- input$bois.ref
+        if(is.null(ref.var) ||
+           ref.var == "None")
+          return(NULL)
+        test.var <- input$bois.test
+        if(is.null(test.var) || test.var == "None")
+          return(NULL)
+        ref <- as.matrix(unname(current.table[ref.var]))
+        ndat <- nrow(ref)
+        alpha <- as.numeric(input$bois.alpha)
+        bois.results <- NULL
+        if(test.var != "NUll"){
+          test <- as.matrix(unname(current.table[test.var]))
+          bois.results <- bois_test(Serie1 = ref, Serie2 = test, alpha = alpha)
+        }
+        else{
+          bois.results <- bois_test(Serie1 = ref, alpha = alpha)
+        }
+        bois.res.df <- data.frame(tt = 0:ndat, residuals = bois.results$residuals,
+                                  ellipse.inf = bois.results$ellipse.inf,
+                                  ellipse.sup = bois.results$ellipse.sup)
+        #
+        # Check residuals outside the ellipse
+        #
+        pos_pos <- bois.results$residuals > bois.results$ellipse.sup
+        pos_neg <- bois.results$residuals < bois.results$ellipse.inf
+        #
+        # Create plot
+        #
+        pres <- ggplot() + geom_line(aes(x = tt, y = residuals), data = bois.res.df, col = "red") +
+          geom_line(aes(x = tt, y = ellipse.inf), data = bois.res.df) +
+          geom_line(aes(x = tt, y = ellipse.sup), data = bois.res.df) +
+          xlab("Time") + ylab("Cumulative Residual")
+        if(test.var != "Null"){
+          pres <- pres + ggtitle(paste0("Results of Bois Test: Stations ", ref.var,"(Ref.), ",
+                                        test.var,"(Test)"))
+        }
+        else {
+          pres <- pres + ggtitle(paste0("Results of Bois Test: Stations ", ref.var,"(Ref.)"))
+        }
+        if(!is.null(pos_pos) & length(pos_pos) > 0){
+          tmp <- cbind(bois.res.df$ellipse.sup, bois.res.df$residuals)
+          bois.res.df$area.sup <- apply(tmp, 1, max)
+          pres <- pres + geom_ribbon(aes(x = tt, ymin = ellipse.sup, ymax = area.sup),
+                                     data = bois.res.df, color = "black", alpha = 0.6, fill = "red")
+        }
+        if(!is.null(pos_neg) & length(pos_neg) > 0){
+          tmp <- cbind(bois.res.df$ellipse.inf, bois.res.df$residuals)
+          bois.res.df$area.inf <- apply(tmp, 1, min)
+          pres <- pres + geom_ribbon(aes(x = tt, ymin = ellipse.inf, ymax = area.inf),
+                                     data = bois.res.df, color = "black", alpha = 0.6, fill = "red")
+        }
       }
     }
     return(pres)
+  })
+  #
+  output$homogeneity <- renderTable({
+    current.table <- server.env$current.table
+    if(is.null(current.table))
+      return(NULL)
+    if(input$consisttype == "None")
+      return(NULL)
+    if(input$consistmethod == "None"){
+      return(NULL)
+    }
+    tab <- NULL
+    if(input$consisttype == "Homogeneous"){
+      if(input$homogeneousmethod == "VonNeumannTest"){
+        test.var <- input$vonnewumann.ref
+        if(is.null(test.var) || test.var == "None")
+          return(NULL)
+        test <- as.matrix(unname(current.table[test.var]))
+        res <- von_neumann_test(test)
+        tab <- as.data.frame(as.matrix(summary(test)))
+        names(tab) <- test.var
+      }
+      else if(input$homogeneousmethod == "CumulativeResiduals"){
+        test.var <- input$cumresiduals.ref
+        if(is.null(test.var) || test.var == "None")
+          return(NULL)
+        test <- as.matrix(unname(current.table[test.var]))
+        res <- cumulative_deviation_test(test, 0.025) 
+        
+        
+      }
+    }
+    return(tab)
   })
   ########################################################################################
   #                             Spatial Analysis TAB

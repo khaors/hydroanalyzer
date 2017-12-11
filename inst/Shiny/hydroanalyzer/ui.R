@@ -126,6 +126,15 @@ shinyUI(pageWithSidebar(
                                        Consistency = "Consistency"),
                            selected = "None"),
                br(),
+               conditionalPanel(condition = 'input.consisttype == "Homogeneous"',
+                                selectInput(inputId = "homogeneousmethod", 
+                                            label = "Method",
+                                            choices = c(None = "None", 
+                                                        VonNeumannTest = "VonNeumannTest", 
+                                                        CumulativeResiduals = "CumulativeResiduals"), 
+                                            selected = "None")
+                                ),
+               br(),
                conditionalPanel(condition = 'input.consisttype == "Consistency"',
                                 selectInput(inputId = "consistmethod", label = "Method",
                                             choices = c(None="None", DoubleMass="DoubleMass", Bois="Bois"),
@@ -135,7 +144,8 @@ shinyUI(pageWithSidebar(
                uiOutput('consist3'),
                br(),
                plotOutput("consistency"),
-               br()
+               br(),
+               tableOutput("homogeneity")
       ),
       #########################################################################
       #                    Panel 'Filling Missing Data'
