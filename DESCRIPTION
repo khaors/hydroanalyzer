@@ -6,7 +6,7 @@ Author: Oscar Garcia-Cabrejo <khaors@gmail.com>
 Maintainer: Oscar Garcia-Cabrejo <khaors@gmail.com>
 Description: This package includes a set of functions used to analyze hidrological information including Exploratory Data Analysis of hydrological time series and spatial information, Homogeneity and Consistency tests, Water budget calculations using the direct, long term and abcd methods, Frequency analysis, and Regionalization.
 License: GPL-3 + file LICENSE
-Imports:  shiny, pracma, GenSA, GA, ggplot2, gridExtra, lubridate, moments, lmom
+Imports:  shiny, pracma, GenSA, GA, ggplot2, gridExtra, lubridate, moments, lmom, gstat, rgdal
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.0.1
