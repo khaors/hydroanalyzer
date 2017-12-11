@@ -46,10 +46,17 @@ von_neumann_test <- function(Series){
 #' \item msg: message
 #' }
 #' @importFrom stats sd
+#' @export
 #' @references 
 #' Buishand, T. SOME METHODS FOR TESTING THE HOMOGENEITY OF RAINFALL RECORDS. Journal of 
 #' Hydrology, 1982, 1, 11-27.
 cumulative_deviation_test <- function(Series, prob){
+  if(class(Series) != "numeric"){
+    stop("ERROR: a numeric vector is required as input")
+  }
+  if(prob < 0.9){
+    stop('ERROR: the specified confidence level is less than 0.9')
+  }
   Sk1 <- cumsum(Series-mean(Series))
   Sk2 <- Sk1/sd(Series)
   Q <- max(abs(Sk2))
