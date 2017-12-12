@@ -107,6 +107,8 @@ abcd.month.model <- function(par.model = c(0,0,0,0,0,0,0), Prec, PEV, ...){
   Rt <- vector('numeric', length = number_months)
   Gt <- vector('numeric', length = number_months)
   Qbt <- vector('numeric', length = number_months)
+  Qdt <- vector('numeric', length = number_months)
+  Et <- vector('numeric', length = number_months)
   #
   Q <- 0.0
   for(irow in 1:number_months){
@@ -117,11 +119,13 @@ abcd.month.model <- function(par.model = c(0,0,0,0,0,0,0), Prec, PEV, ...){
     yy <- (W+b)/(2*a)-(((W+b)/(2*a))^2-((W*b)/a))^0.5
     #Potential evapotranspiration
     E <- yy*(1-exp(-Ep[irow]/b))
+    Et[irow] <- E
     #Soil moisture
     S <- yy- E
     St[irow] <- S
     #Runoff
     Qd <- (1-c)*(W-yy)
+    Qdt[irow] <- Qd
     #GW Recharge
     R <- c*(W-yy)
     Rt[irow] <- R
@@ -137,8 +141,8 @@ abcd.month.model <- function(par.model = c(0,0,0,0,0,0,0), Prec, PEV, ...){
     S_1 <- S
     Qt[irow] <- Q
   }
-  res <- list(Qt = Qt, Wt = Wt, SRt = Qd, SMt = St, Rt = Rt, Gt = Gt,
-              Qbt = Qbt, ETt = E)
+  res <- list(Qt = Qt, Wt = Wt, SRt = Qdt, SMt = St, Rt = Rt, Gt = Gt,
+              Qbt = Qbt, ETt = Et)
   #res <- Qt
   return(res)
 }
