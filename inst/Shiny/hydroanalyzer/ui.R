@@ -8,6 +8,7 @@
 #
 
 library(shiny)
+library(DT)
 # Define UI for application that draws a histogram
 shinyUI(pageWithSidebar(
   # Application title
@@ -201,7 +202,6 @@ shinyUI(pageWithSidebar(
                    tabsetPanel(
                      tabPanel("Spatial Correlation",
                               br()
-
                      ),
                      tabPanel("Hydrological Maps",
                        br(),
@@ -238,11 +238,15 @@ shinyUI(pageWithSidebar(
                uiOutput('budget3'),
                uiOutput('budget4'),
                uiOutput('budget5'),
+               uiOutput('budget6'),
+               uiOutput('budget7'),
+               uiOutput('budget8'),
                plotOutput('water.budget'),
                br(),
                h4('Water Budget Results'),
                br(),
-               uiOutput('view.budget')
+               #uiOutput('view.budget')
+               dataTableOutput("view.budget")
       ),
       #########################################################################
       #                    Panel 'Base Flow Analysis'

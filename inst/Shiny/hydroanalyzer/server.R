@@ -15,6 +15,7 @@ library(lmom)
 library(sp)
 library(gstat)
 library(rgdal)
+library(DT)
 library(hydroanalyzer)
 #
 # Define Global Variables
@@ -215,11 +216,13 @@ shinyServer(function(input, output, session) {
   # #
   output$consist1 <- renderUI({
     tmp <- NULL
-    if(input$consisttype == "None")
+    if( is.null(input$consisttype) ||  input$consisttype == "None")
       return(NULL)
-    if(input$consistmethod == "None")
-      return(NULL)
-    if(input$consisttype == "Homogenous"){
+    #if(input$consistmethod == "None")
+    #  return(NULL)
+    #print("InsideUI1")
+    #print(input$consisttype)
+    if(input$consisttype == "Homogeneous"){
       if(input$homogeneousmethod == "VonNeumannTest"){
         if(!is.null(server.env$current.table)){
           current.names <- c("None", server.env$current.varnames)
@@ -258,8 +261,8 @@ shinyServer(function(input, output, session) {
     tmp <- NULL
     if(input$consisttype == "None")
       return(NULL)
-    if(input$consistmethod == "None")
-      return(NULL)
+    #if(input$consistmethod == "None")
+    #  return(NULL)
     if(input$consisttype == "Consistency"){
       if(input$consistmethod == "DoubleMass"){
         if(!is.null(server.env$current.table)){
@@ -387,24 +390,27 @@ shinyServer(function(input, output, session) {
   })
   #
   output$homogeneity <- renderTable({
+    #print("inside")
     current.table <- server.env$current.table
     if(is.null(current.table))
       return(NULL)
     if(input$consisttype == "None")
       return(NULL)
-    if(input$consistmethod == "None"){
-      return(NULL)
-    }
+    #if(input$consistmethod == "None"){
+    #  return(NULL)
+    #}
     tab <- NULL
     if(input$consisttype == "Homogeneous"){
       if(input$homogeneousmethod == "VonNeumannTest"){
-        test.var <- input$vonnewumann.ref
+        test.var <- input$vonnewmann.ref
         if(is.null(test.var) || test.var == "None")
           return(NULL)
         test <- as.matrix(unname(current.table[test.var]))
         res <- von_neumann_test(test)
+        print(res)
         tab <- as.data.frame(as.matrix(summary(test)))
         names(tab) <- test.var
+        print(tab)
       }
       else if(input$homogeneousmethod == "CumulativeResiduals"){
         test.var <- input$cumresiduals.ref
@@ -412,8 +418,6 @@ shinyServer(function(input, output, session) {
           return(NULL)
         test <- as.matrix(unname(current.table[test.var]))
         res <- cumulative_deviation_test(test, 0.025) 
-        
-        
       }
     }
     return(tab)
@@ -443,15 +447,11 @@ shinyServer(function(input, output, session) {
       return(NULL)
     rainfall
   })
-
-
-
-
   ##########################################################################################
   #                                Water Budget Tab
   ##########################################################################################
   output$budget1 <- renderUI({
-    if(input$budgetmethod == "Direct"){
+    if(input$budgetmethod == "Direct" || input$budgetmethod == "ABCD"){
       if(!is.null(server.env$current.table)){
         current.names <-  c("None", server.env$current.varnames)
         selectInput(inputId= "Budget.prec", label = "Precipitation",
@@ -460,7 +460,7 @@ shinyServer(function(input, output, session) {
   })
   #
   output$budget2 <- renderUI({
-    if(input$budgetmethod == "Direct"){
+    if(input$budgetmethod == "Direct" || input$budgetmethod == "ABCD"){
       if(!is.null(server.env$current.table)){
         radioButtons(inputId = "EVTcalculation", label = "EVT Calculation",
                      choices = c(EVT = "EVT", Temperature = "Temperature"))
@@ -469,7 +469,7 @@ shinyServer(function(input, output, session) {
   })
   #
   output$budget3 <- renderUI({
-    if(input$budgetmethod == "Direct"){
+    if(input$budgetmethod == "Direct" || input$budgetmethod == "ABCD"){
       if(!is.null(server.env$current.table)){
         current.names <-  c("None", server.env$current.varnames)
         selectInput(inputId= "Budget.evtcol", label = "Variable",
@@ -484,6 +484,10 @@ shinyServer(function(input, output, session) {
         textInput(inputId= "Budget.rmax", label = "Max. Soil Retention",
                     value = "100")}
     }
+    else if(input$budgetmethod == "ABCD"){
+      selectInput(inputId = "ABCD.scale", label = "Temporal Scale ", 
+                choices = c("None", "Month", "Year"), selected = "None")
+    }
   })
   #
   output$budget5 <- renderUI({
@@ -494,29 +498,45 @@ shinyServer(function(input, output, session) {
 
       }
     }
+    else if(input$budgetmethod == "ABCD"){
+      if(!is.null(server.env$current.table)){
+        current.names <-  c("None", server.env$current.varnames)
+        selectInput(inputId = "Budget.Q", label = "Discharge", 
+                    choices = current.names, selected = "None")
+      }
+    }
   })
   #
-  output$water.budget <- renderPlot({
+  output$budget6 <- renderUI({
+    tmp <- NULL 
+    if(!is.null(server.env$current.table)){
+      tmp <- actionButton(inputId = "run.budget", label = "Calculate Water Budget")
+    }
+    return(tmp)
+  })
+  #
+  calculate_water_budget_direct <- function(){
     current.table <- server.env$current.table
     if(is.null(current.table))
       return(NULL)
-    var.prec <- input$Budget.prec
+    var.prec <- isolate(input$Budget.prec)
     if(is.null(var.prec) || var.prec == "None")
       return(NULL)
-    var.evt <- input$Budget.evtcol
+    var.evt <- isolate(input$Budget.evtcol)
     if(is.null(var.evt) || var.evt == "None")
       return(NULL)
     EVT <- NULL
     Prec <- as.matrix(current.table[var.prec])
-    if(input$Budget.evtcol == "EVT"){
+    if(var.evt == "EVT"){
       EVT <- as.matrix(current.table[var.evt])
     }
     else{
       EVT <- evt_thornthwaite(as.matrix(current.table[var.evt]))
     }
-    Rmax <- as.numeric(input$Budget.rmax)
+    Rmax <- isolate(as.numeric(input$Budget.rmax))
     water.budget <- NULL
-    if(input$budgetmethod == "Direct"){
+    budget.method <- isolate(input$budgetmethod)
+    if(budget.method == "Direct"){
       water.budget <- water_budget_direct(Prec, EVT, Rmax)
     }
     if(is.null(water.budget))
@@ -537,7 +557,8 @@ shinyServer(function(input, output, session) {
     water.budget.df <- data.frame(month = months, quantities = quantities,
                                   process = process)
     process1 <- rbind(cbind(rep("Precipitation", 12)), cbind(rep("EVT", 12)))
-    data.df <- data.frame(month = months[1:24], quantities = rbind(unname(Prec),unname(EVT)),
+    data.df <- data.frame(month = months[1:24], quantities = rbind(unname(Prec), 
+                                                                   unname(EVT)),
                           process = process1)
     names(data.df) <- c("month", "quantities", "process")
     #
@@ -545,13 +566,13 @@ shinyServer(function(input, output, session) {
     #
     vmax <- max(c(max(Prec),max(EVT)))
     phydro <- ggplot() + geom_line(aes(x = month, y = quantities, color = process),
-                                         data = data.df) +
+                                   data = data.df) +
       ylim(0, vmax) +
       theme(legend.title=element_blank())
     #
     pos <- water.budget.df$process == "Storage"
     preserve <- ggplot() +  geom_area(aes(x = month, y = quantities, fill = process),
-                                         data = water.budget.df[pos,]) +
+                                      data = water.budget.df[pos,]) +
       ylim(0, vmax) + xlim(1,12) +
       scale_fill_manual(values=c("#3399FF"))  + theme(legend.title=element_blank())
     #
@@ -562,7 +583,7 @@ shinyServer(function(input, output, session) {
     #
     pos <- water.budget.df$process == "Deficit"
     pdeficit <- ggplot() +  geom_area(aes(x = month, y = quantities, fill = process),
-                                  data = water.budget.df[pos,]) + ylim(0, vmax) +
+                                      data = water.budget.df[pos,]) + ylim(0, vmax) +
       scale_fill_manual(values=c("#CC6666")) + theme(legend.title=element_blank())
     #
     pos <- water.budget.df$process == "Excess"
@@ -574,6 +595,13 @@ shinyServer(function(input, output, session) {
     prunoff <- ggplot() +  geom_area(aes(x = month, y = quantities, fill = process),
                                      data = water.budget.df[pos,]) + ylim(0, vmax) +
       scale_fill_manual(values=c("#FF0033")) + theme(legend.title=element_blank())
+    #
+    pos <- water.budget.df$process == "Recharge"
+    precharge <- ggplot() + geom_area(aes(x = month, y = quantities, fill = process),
+                                      data = water.budget.df[pos,]) + 
+      ylim(-vmax, vmax) +
+      scale_fill_manual(values=c("#3366FF")) + 
+      theme(legend.title=element_blank())
     #
     # Create dataframe for Table
     #
@@ -592,16 +620,135 @@ shinyServer(function(input, output, session) {
       rownames(water.budget.mt) <- c("Prec","EVT","Reserve","ETR","Excess","Deficit","Runoff","Recharge")
       colnames(water.budget.mt) <- c("Jan","Feb","March","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")
       server.env$water.budget.mt <- water.budget.mt
-      output$view.budget <- renderTable({ water.budget.mt }, rownames = TRUE)
+      #output$view.budget <- renderTable({ water.budget.mt }, rownames = TRUE)
+      output$view.budget <- renderDataTable({
+        datatable(water.budget.mt,
+                  extensions = c('Buttons'),
+                  options = list(
+                    pageLength = 10,
+                    dom = 'Bfrtip',
+                    buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+                    text = 'Download',
+                    scrollY = 200)) %>% formatRound(1:12, 3)
+      })
     }
-
-
     #
-    grid.arrange(phydro, preserve, pevt, pdeficit, pexcess, prunoff,
-                 nrow = 3, ncol = 2,
-                 as.table=TRUE,
-                 heights=c(3,3,3))
+    res <- grid.arrange(phydro, preserve, pevt, pdeficit, precharge, prunoff,
+                        nrow = 3, ncol = 2,
+                        as.table=TRUE,
+                        heights=c(3,3,3))
+    return(res)
+  }
+  #
+  calculate_water_budget_abcd <- function(){
+    current.table <- server.env$current.table
+    if(is.null(current.table))
+      return(NULL)
+    var.prec <- isolate(input$Budget.prec)
+    if(is.null(var.prec) || var.prec == "None")
+      return(NULL)
+    var.evt <- isolate(input$Budget.evtcol)
+    if(is.null(var.evt) || var.evt == "None")
+      return(NULL)
+    EVT <- NULL
+    Prec <- as.matrix(current.table[var.prec])
+    if(var.evt == "EVT"){
+      EVT <- as.matrix(current.table[var.evt])
+    }
+    else{
+      EVT <- evt_thornthwaite(as.matrix(current.table[var.evt]))
+    }
+    var.Q <- isolate(input$Budget.Q)
+    if(is.null(var.Q) || var.Q == "None")
+      return(NULL)
+    Q <- as.matrix(current.table[var.Q])
+    # Calibration parameters
+    obj.fn <- isolate(input$objfn) #c("rss", "mnad", "mxad")
+    opt.method <- isolate(input$optmethod) # c("lbfgs", "ga", "sa")
+    # Search region
+    if(input$budgetmethod == "ABCD"){
+      scale <- isolate(input$ABCD.scale)
+      if(is.null(scale) || scale == "None")
+        return(NULL)
+      if(scale == "Month"){
+        args <- list(Prec = P, PET = EVT)
+        fn.model <- "abcd.month.model"
+        res <- calibrate(Q, fn.model, obj.fn = obj.fn,
+                         opt.method = opt.method, args)
+      }
+      else if(scale == "Year"){
+        args <- list(Prec = P, PET = EVT)
+        fn.model <- "abcd.year.model"
+        res <- calibrate(Q, fn.model, obj.fn = objn.fn,
+                         opt.method = opt.method, args)
+      }
+    }
+    res <- NULL
+    return(res)
+  }
+  #
+  observeEvent(input$run.budget,{
+    print("run.budget")
+    output$water.budget <- renderPlot({
+      res.plot <- NULL
+      budget.method <- isolate(input$budgetmethod)
+      if(budget.method == "Direct"){
+        res.plot <- calculate_water_budget_direct()
+      }
+      else if(budget.method == "ABCD"){
+
+      }
+      return(res.plot)
+    })
   })
+
+  # observeEvent(input$transformationRun, {
+  #   output$transform_results <- renderDataTable({
+  #     current.ves <- server.env$current.ves
+  #     if(input$transform_results_plot){
+  #       validate(
+  #         need(!is.null(current.ves), "The VES is not defined")
+  #       )
+  #       #
+  #       if(is.null(current.ves))
+  #         return(NULL)
+  #       #
+  #       current.transformation <- isolate(input$transformation.type)
+  #       validate(
+  #         need(current.transformation != "None", "Please choose a Transformation")
+  #       )
+  #       current.transf <- NULL
+  #       if(current.transformation == "Direct"){
+  #         current.transf <- "direct"
+  #       }
+  #       else if(current.transformation == "Scaling"){
+  #         current.transf <- "scaling"
+  #       }
+  #       else if(current.transformation == "Zohdy"){
+  #         current.transf <- "zohdy"
+  #       }
+  #       else if(current.transformation == "Smoothed.Zohdy"){
+  #         current.transf <- "smoothed_zohdy"
+  #       }
+  #       #
+  #       base_transform <- "transform_"
+  #       def_transform <- paste0(base_transform, current.transf)
+  #       args <- list(ves = current.ves)
+  #       res_transform <- do.call(def_transform, args)
+  #       res <- data.frame(depth = res_transform$depth,
+  #                         real.resistivity = res_transform$real.res)
+  #       return(res)
+  #     }
+  #     
+  #   }, extensions = c('Buttons'),
+  #   options = list(
+  #     pageLength = length(server.env$current.ves$ab2),
+  #     dom = 'Bfrtip',
+  #     buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+  #     text = 'Download',
+  #     scrollY = 200,
+  #     scroller = TRUE))
+  #
   ##########################################################################################
   #                             Baseflow Tab
   ##########################################################################################
