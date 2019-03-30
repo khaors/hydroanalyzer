@@ -20,3 +20,4 @@ Function to locate a specific value inside a vector
 \author{
 Oscar Garcia-Cabrejo \email{khaors@gmail.com}
 }
+\concept{homogeneity functions}

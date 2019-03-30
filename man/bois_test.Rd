@@ -32,3 +32,4 @@ Other consistency functions: \code{\link{double_mass_curve}}
 \author{
 Oscar Garcia-Cabrejo \email{khaors@gmail.com}
 }
+\concept{consistency functions}

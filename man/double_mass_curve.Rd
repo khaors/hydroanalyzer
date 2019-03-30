@@ -27,3 +27,4 @@ Other consistency functions: \code{\link{bois_test}}
 \author{
 Oscar Garcia-Cabrejo \email{khaors@gmail.com}
 }
+\concept{consistency functions}

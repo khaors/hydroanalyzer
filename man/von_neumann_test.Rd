@@ -22,3 +22,4 @@ Von Neumann test for homogenity of time series
 \author{
 Oscar Garcia-Cabrejo \email{khaors@gmail.com}
 }
+\concept{homogenity functions}

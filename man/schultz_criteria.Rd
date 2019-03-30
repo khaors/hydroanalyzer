@@ -33,3 +33,4 @@ Other calibration functions: \code{\link{log_nash_sutcliffe}},
 \author{
 Oscar Garcia-Cabrejo \email{khaors@gmail.com}
 }
+\concept{calibration functions}

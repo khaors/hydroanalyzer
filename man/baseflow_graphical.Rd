@@ -22,3 +22,4 @@ Function to calculate the baseflow from a discharge time series using the graphi
 \author{
 Oscar Garcia-Cabrejo \email{khaors@gmail.com}
 }
+\concept{graphical functions}

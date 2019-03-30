@@ -4,9 +4,9 @@
 \alias{uncertainty_quantification_boot}
 \title{uncertainty_quantification_boot}
 \usage{
-uncertainty_quantification_boot(measured, fn.model, obj.fn = c("rss", "mnad",
-  "mxad"), opt.method = c("lbfgs", "ga", "sa"), args, level = c(0.025,
-  0.975), neval = 100, seed = 12345)
+uncertainty_quantification_boot(measured, fn.model, obj.fn = c("rss",
+  "mnad", "mxad"), opt.method = c("lbfgs", "ga", "sa"), args,
+  level = c(0.025, 0.975), neval = 100, seed = 12345)
 }
 \arguments{
 \item{measured}{A numeric vector with measured values}
@@ -51,3 +51,4 @@ Other calibration functions: \code{\link{log_nash_sutcliffe}},
 \author{
 Oscar Garcia-Cabrejo \email{khaors@gmail.com}
 }
+\concept{calibration functions}

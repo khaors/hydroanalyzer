@@ -30,3 +30,4 @@ Other digital_filter functions: \code{\link{eckhardt_filter}},
 \author{
 Oscar Garcia-Cabrejo \email{khaors@gmail.com}
 }
+\concept{digital_filter functions}

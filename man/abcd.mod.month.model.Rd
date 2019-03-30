@@ -4,7 +4,8 @@
 \alias{abcd.mod.month.model}
 \title{abcd.mod.month.model}
 \usage{
-abcd.mod.month.model(par.model = c(0, 0, 0, 0, 0, 0, 0), Prec, PEV, Vp, ...)
+abcd.mod.month.model(par.model = c(0, 0, 0, 0, 0, 0, 0), Prec, PEV, Vp,
+  ...)
 }
 \arguments{
 \item{par.model}{A numeric vector of length 5 with the values of the abcd parameters and the initial groundwater storage}
@@ -44,3 +45,4 @@ Other abcd_model functions: \code{\link{abcd.mod.year.model}},
 \author{
 Oscar Garcia-Cabrejo \email{khaors@gmail.com}
 }
+\concept{abcd_model functions}

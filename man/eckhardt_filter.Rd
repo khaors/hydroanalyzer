@@ -31,3 +31,4 @@ Other digital_filter functions: \code{\link{chapman_filter}},
 \author{
 Oscar Garcia-Cabrejo \email{khaors@gmail.com}
 }
+\concept{digital_filter functions}

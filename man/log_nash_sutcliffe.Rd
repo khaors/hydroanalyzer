@@ -33,3 +33,4 @@ Other calibration functions: \code{\link{mass_balance_error}},
 \author{
 Oscar Garcia-Cabrejo \email{khaors@gmail.com}
 }
+\concept{calibration functions}

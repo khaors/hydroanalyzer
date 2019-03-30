@@ -40,3 +40,4 @@ Other abcd_model functions: \code{\link{abcd.mod.month.model}},
 \author{
 Oscar Garcia-Cabrejo \email{khaors@gmail.com}
 }
+\concept{abcd_model functions}
