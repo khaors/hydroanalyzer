@@ -92,6 +92,7 @@ shinyServer(function(input, output, session) {
     ndat <- nrow(the.table)
     server.env$current.table <- the.table
     server.env$current.varnames <- names(the.table)
+    print(the.table)
     the.table
   })
   # data preview table
@@ -296,7 +297,6 @@ shinyServer(function(input, output, session) {
     }
     return(tmp)
   })
-
   #
   output$consistency <- renderPlot({
     current.table <- server.env$current.table
@@ -495,7 +495,6 @@ shinyServer(function(input, output, session) {
       if(!is.null(server.env$current.table)){
         checkboxInput(inputId = "Budget.table", label = "Water Budget Table",
                       value = FALSE)
-
       }
     }
     else if(input$budgetmethod == "ABCD"){
@@ -508,9 +507,11 @@ shinyServer(function(input, output, session) {
   })
   #
   output$budget6 <- renderUI({
-    tmp <- NULL 
-    if(!is.null(server.env$current.table)){
-      tmp <- actionButton(inputId = "run.budget", label = "Calculate Water Budget")
+    tmp <- NULL
+    if(input$budgetmethod == "Direct" || input$budgetmethod == "ABCD"){
+      if(!is.null(server.env$current.table)){
+        tmp <- actionButton(inputId = "run.budget", label = "Calculate Water Budget")
+      }
     }
     return(tmp)
   })
@@ -527,6 +528,7 @@ shinyServer(function(input, output, session) {
       return(NULL)
     EVT <- NULL
     Prec <- as.matrix(current.table[var.prec])
+    print(Prec)
     if(var.evt == "EVT"){
       EVT <- as.matrix(current.table[var.evt])
     }
@@ -683,7 +685,7 @@ shinyServer(function(input, output, session) {
                          opt.method = opt.method, args)
       }
     }
-    res <- NULL
+
     return(res)
   }
   #
@@ -696,7 +698,7 @@ shinyServer(function(input, output, session) {
         res.plot <- calculate_water_budget_direct()
       }
       else if(budget.method == "ABCD"){
-
+        res.plot <- calculate_water_budget_abcd()
       }
       return(res.plot)
     })
